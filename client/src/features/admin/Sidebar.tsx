@@ -5,6 +5,7 @@ import playIcon from "../../assets/icons/icon-play.svg";
 import prizesIcon from "../../assets/icons/icon-prizes.svg";
 import winnersIcon from "../../assets/icons/icon-winners.svg";
 import { Button } from "../../components/Button";
+import { MaskIcon } from "../../components/MaskIcon";
 import { Wordmark } from "../../components/Wordmark";
 import { useLogoutMutation } from "../auth/queries";
 
@@ -14,28 +15,6 @@ const items = [
   { to: "/admin/prizes", label: "Prizes", icon: prizesIcon },
   { to: "/admin/winners", label: "Winners", icon: winnersIcon },
 ] as const;
-
-// The Figma icons carry fixed colors, so they are drawn as a mask and follow the item's text color.
-function Icon({ src }: { src: string }) {
-  // Quoted: Vite inlines small SVGs as data URIs, which are invalid inside an unquoted url().
-  const mask = `url(${JSON.stringify(src)})`;
-  return (
-    <span
-      aria-hidden="true"
-      className="size-5 shrink-0 bg-current"
-      style={{
-        maskImage: mask,
-        WebkitMaskImage: mask,
-        maskSize: "contain",
-        WebkitMaskSize: "contain",
-        maskRepeat: "no-repeat",
-        WebkitMaskRepeat: "no-repeat",
-        maskPosition: "center",
-        WebkitMaskPosition: "center",
-      }}
-    />
-  );
-}
 
 export function Sidebar() {
   const navigate = useNavigate();
@@ -70,7 +49,7 @@ export function Sidebar() {
             }}
             inactiveProps={{ className: "border-transparent text-gold-muted hover:text-gold-300" }}
           >
-            <Icon src={item.icon} />
+            <MaskIcon src={item.icon} />
             {item.label}
           </Link>
         ))}

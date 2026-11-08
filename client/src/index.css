@@ -32,6 +32,7 @@
 
   /* Radius tokens from the Figma Layout collection (only the ones in use) */
   --radius-md: 12px;
+  --radius-lg: 16px;
   --radius-xl: 24px;
   --radius-full: 999px;
 
@@ -40,6 +41,12 @@
   --text-heading-lg--line-height: 44px;
   --text-heading-lg--letter-spacing: -0.01em;
   --text-heading-lg--font-weight: 700;
+  --text-heading-sm: 20px;
+  --text-heading-sm--line-height: 28px;
+  --text-heading-sm--font-weight: 600;
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 16px;
+  --text-label-sm--font-weight: 500;
   --text-body-md: 16px;
   --text-body-md--line-height: 24px;
   --text-body-md--font-weight: 400;
