@@ -1,11 +1,11 @@
 import { useId } from "react";
-import type { InputHTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
 type TextInputProps = {
   label: string;
   error?: string;
   trailing?: ReactNode;
-} & InputHTMLAttributes<HTMLInputElement>;
+} & ComponentProps<"input">;
 
 export function TextInput({ label, error, trailing, className = "", ...props }: TextInputProps) {
   const id = useId();

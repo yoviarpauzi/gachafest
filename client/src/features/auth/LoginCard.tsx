@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useNavigate } from "@tanstack/react-router";
 import { Alert } from "../../components/Alert";
@@ -23,6 +23,18 @@ export function LoginCard() {
   const apiError = mutation.error instanceof ApiError ? mutation.error : null;
   const locked = useRateLimitLock(apiError);
   const disabled = mutation.isPending || locked;
+
+  // Hand focus back to the field (old text selected) once a request or a 429 lock ends,
+  // so the organizer can retype right away even after clicking the button.
+  const inputRef = useRef<HTMLInputElement>(null);
+  const wasDisabled = useRef(false);
+  useEffect(() => {
+    if (wasDisabled.current && !disabled) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+    wasDisabled.current = disabled;
+  }, [disabled]);
 
   // 429 shows the banner while locked and the default look afterwards, never a field message.
   let serverMessage: string | undefined;
@@ -65,6 +77,7 @@ export function LoginCard() {
         <form.Field name="password">
           {(field) => (
             <TextInput
+              ref={inputRef}
               label="Password"
               name={field.name}
               type={showPassword ? "text" : "password"}
