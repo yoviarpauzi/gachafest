@@ -2,19 +2,20 @@ import { Elysia } from "elysia";
 import { parseEnv } from "./env";
 import { createRateLimiter } from "./auth/rate-limit";
 import { createAuthRoutes } from "./auth/routes";
+import { HOST, listen } from "./server";
 
 const PORT = 3000;
 const env = parseEnv(process.env);
 
-new Elysia()
-  .use(
-    createAuthRoutes({
-      adminPassword: env.ADMIN_PASSWORD,
-      sessionSecret: env.SESSION_SECRET,
-      limiter: createRateLimiter(),
-      now: Date.now,
-    }),
-  )
-  .listen(PORT);
+const app = new Elysia().use(
+  createAuthRoutes({
+    adminPassword: env.ADMIN_PASSWORD,
+    sessionSecret: env.SESSION_SECRET,
+    limiter: createRateLimiter(),
+    now: Date.now,
+  }),
+);
 
-console.log(`Server listening on http://localhost:${PORT}`);
+listen(app, PORT);
+
+console.log(`Server listening on http://${HOST}:${PORT}`);
