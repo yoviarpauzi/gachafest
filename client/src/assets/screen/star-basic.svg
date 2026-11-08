@@ -1,0 +1,18 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="420" height="420" viewBox="0 0 420 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="FX / Falling star">
+<path id="Vector" d="M0 0L354 300L300 354L0 0Z" fill="url(#paint0_linear_0_20)"/>
+<path id="Vector_2" d="M336 414C379.078 414 414 379.078 414 336C414 292.922 379.078 258 336 258C292.922 258 258 292.922 258 336C258 379.078 292.922 414 336 414Z" fill="url(#paint1_radial_0_20)"/>
+<path id="Vector_3" d="M336 297.6C340.096 319.104 352.896 331.904 374.4 336C352.896 340.096 340.096 352.896 336 374.4C331.904 352.896 319.104 340.096 297.6 336C319.104 331.904 331.904 319.104 336 297.6Z" fill="#FFFBF2"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_20" x1="0" y1="0" x2="336" y2="336" gradientUnits="userSpaceOnUse">
+<stop stop-color="#D9CDB8" stop-opacity="0"/>
+<stop offset="1" stop-color="#F6EEDF" stop-opacity="0.95"/>
+</linearGradient>
+<radialGradient id="paint1_radial_0_20" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(336 336) scale(78)">
+<stop stop-color="#FFFBF2" stop-opacity="0.95"/>
+<stop offset="0.45" stop-color="#D9CDB8" stop-opacity="0.45"/>
+<stop offset="1" stop-color="#D9CDB8" stop-opacity="0"/>
+</radialGradient>
+</defs>
+</svg>

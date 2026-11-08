@@ -25,7 +25,8 @@ export function useReveal(
   useGSAP(
     () => {
       if (!scope.current || key === null) return;
-      timeline.current = buildRevealTimeline(scope.current, { tier });
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      timeline.current = buildRevealTimeline(scope.current, { tier, reducedMotion });
       return () => {
         timeline.current = null;
       };

@@ -1,6 +1,9 @@
 import { useRef } from "react";
 import { announce } from "./announce";
 import type { ScreenState } from "./api";
+import { Confetti } from "./fx/Confetti";
+import { FallingStar } from "./fx/FallingStar";
+import { Flash } from "./fx/Flash";
 import { EventLockup } from "./EventLockup";
 import { LiveBadge } from "./LiveBadge";
 import { fitBox } from "./nameSize";
@@ -55,6 +58,12 @@ export function RevealView({
         </SlotMachine>
       </div>
 
+      {/* The cinematic part: the screen dims, a star falls onto the machine, and a flash fills the screen. */}
+      <div aria-hidden="true" data-fx="dim" className="pointer-events-none absolute inset-0 bg-black-950/70 opacity-0" />
+      <Flash tier={view.tier} />
+      <FallingStar tier={view.tier} />
+      {view.tier === "premium" && <div aria-hidden="true" data-fx="burst" className="pointer-events-none absolute inset-0 bg-burst opacity-0" />}
+
       {view.prize && value !== null && (
         <>
           <div data-fx="heading" className="absolute top-42.5 left-97.5 flex min-h-17 w-285 items-center justify-center gap-10 opacity-0">
@@ -87,6 +96,7 @@ export function RevealView({
         </div>
       )}
       <NamePlate name={plateShown ? view.winnerName : null} className="absolute top-120 left-115 opacity-0" />
+      {view.tier === "premium" && <Confetti seed={view.key} count={80} />}
     </div>
   );
 }
