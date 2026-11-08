@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { MIN_STRIP, buildReelStrip } from "./reel";
+import { MIN_STRIP, NEIGHBOR_SCALE, buildReelStrip, emphasis } from "./reel";
 
 const names = (n: number) => Array.from({ length: n }, (_, i) => `Guest ${i + 1}`);
 
@@ -44,5 +44,30 @@ describe("buildReelStrip", () => {
 
   test("gives the same strip for the same input, so two screens agree", () => {
     expect(buildReelStrip(names(7), "W")).toEqual(buildReelStrip(names(7), "W"));
+  });
+});
+
+describe("emphasis", () => {
+  test("the name in the middle of the window is full size and fully dark", () => {
+    expect(emphasis(0)).toEqual({ scale: 1, t: 0 });
+  });
+
+  test("a name one line away is the smaller, faded size from the design", () => {
+    expect(emphasis(1)).toEqual({ scale: NEIGHBOR_SCALE, t: 1 });
+    expect(NEIGHBOR_SCALE).toBeCloseTo(67.2 / 102, 2);
+  });
+
+  test("above or below the middle makes no difference", () => {
+    expect(emphasis(-1)).toEqual(emphasis(1));
+  });
+
+  test("names further out stay at the neighbour look", () => {
+    expect(emphasis(3)).toEqual({ scale: NEIGHBOR_SCALE, t: 1 });
+  });
+
+  test("a name halfway between two lines is halfway between the two looks", () => {
+    const half = emphasis(0.5);
+    expect(half.t).toBe(0.5);
+    expect(half.scale).toBeCloseTo((1 + NEIGHBOR_SCALE) / 2, 5);
   });
 });

@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { GoldWaves } from "../../components/GoldWaves";
 import { IdleView } from "./IdleView";
 import { screenQueryOptions } from "./queries";
+import { RevealView } from "./RevealView";
 import { Stage } from "./Stage";
 import { StandbyView } from "./StandbyView";
 import { useElapsed } from "./useElapsed";
@@ -30,6 +31,9 @@ export function ScreenPage() {
         <GoldWaves className="absolute top-10 -left-12 h-252 w-504" />
         {view.kind === "idle" && <IdleView />}
         {view.kind === "standby" && <StandbyView view={view} />}
+        {view.kind === "reveal" && (
+          <RevealView key={view.key} view={view} state={screen.data} dataUpdatedAt={screen.dataUpdatedAt} />
+        )}
       </Stage>
     </main>
   );
