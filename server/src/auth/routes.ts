@@ -1,8 +1,9 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { Elysia } from "elysia";
+import { isSessionValid } from "./guard";
 import type { RateLimiter } from "./rate-limit";
 import { loginBody } from "./schema";
-import { SESSION_COOKIE, SESSION_TTL_MS, signSession, verifySession } from "./session";
+import { SESSION_COOKIE, SESSION_TTL_MS, signSession } from "./session";
 
 const sha256 = (value: string) => createHash("sha256").update(value).digest();
 
@@ -52,8 +53,7 @@ export function createAuthRoutes(deps: {
       { body: loginBody },
     )
     .get("/me", ({ cookie, status }) => {
-      const value = cookie[SESSION_COOKIE]!.value;
-      if (!verifySession(value === undefined ? undefined : String(value), sessionSecret, now())) {
+      if (!isSessionValid(cookie[SESSION_COOKIE]!.value, sessionSecret, now())) {
         return status(401, { authenticated: false });
       }
       return { authenticated: true };
