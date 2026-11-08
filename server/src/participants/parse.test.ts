@@ -12,7 +12,7 @@ async function xlsx(sheets: { sheet: string; data: ReturnType<typeof cell>[][] }
 }
 const header = [cell("Name"), cell("Email")];
 
-const rejects = async (promise: Promise<unknown>, code: string) => {
+const rejects = async (promise: Promise<unknown>, code: ParticipantsFileError["code"]) => {
   const error = await promise.then(
     () => null,
     (e: unknown) => e,
