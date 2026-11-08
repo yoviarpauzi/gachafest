@@ -146,3 +146,47 @@ describe("GET /api/auth/me", () => {
     expect(await res.json()).toEqual({ authenticated: false });
   });
 });
+
+describe("POST /api/auth/logout", () => {
+  const logout = (app: App, cookie?: string) =>
+    app.handle(
+      new Request("http://localhost/api/auth/logout", {
+        method: "POST",
+        headers: cookie ? { cookie } : undefined,
+      }),
+    );
+
+  test("logout clears the session cookie", async () => {
+    const { app } = makeApp();
+    const cookie = cookieOf(await login(app, PASSWORD));
+    const res = await logout(app, cookie);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    const setCookie = res.headers.get("set-cookie")!;
+    expect(setCookie).toMatch(/^session=;/);
+    expect(setCookie).toContain("Max-Age=0");
+    expect(setCookie).toContain("Path=/");
+    expect(setCookie).toContain("HttpOnly");
+    expect(setCookie).toContain("SameSite=Lax");
+  });
+
+  test("logout is idempotent without a cookie", async () => {
+    const { app } = makeApp();
+    const res = await logout(app);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+  });
+
+  test("logout with a garbage cookie returns 200 and clears", async () => {
+    const { app } = makeApp();
+    const res = await logout(app, "session=garbage");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("set-cookie")).toMatch(/^session=;.*Max-Age=0/);
+  });
+
+  test("me returns 401 with the cleared cookie", async () => {
+    const { app } = makeApp();
+    const res = await me(app, "session=");
+    expect(res.status).toBe(401);
+  });
+});

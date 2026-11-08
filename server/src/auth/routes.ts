@@ -52,6 +52,16 @@ export function createAuthRoutes(deps: {
       },
       { body: loginBody },
     )
+    .post("/logout", ({ cookie }) => {
+      cookie[SESSION_COOKIE]!.set({
+        value: "",
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 0,
+      });
+      return { ok: true };
+    })
     .get("/me", ({ cookie, status }) => {
       if (!isSessionValid(cookie[SESSION_COOKIE]!.value, sessionSecret, now())) {
         return status(401, { authenticated: false });
