@@ -300,3 +300,69 @@ describe("get", () => {
     expect(winners.get(99)).toBeNull();
   });
 });
+
+describe("remove", () => {
+  const drawFor = (winners: ReturnType<typeof setup>["winners"], prizeId: number) => {
+    const result = winners.draw(prizeId);
+    if (result.kind !== "ok") throw new Error(`draw gave ${result.kind}`);
+    return result.winner;
+  };
+
+  test("deletes a valid winner for good: the slot opens and the person can be drawn for the prize again", () => {
+    const { winners, guests, prize, picks } = setup();
+    guests("Rina", "Budi");
+    const grand = prize("Grand Prize", 1);
+    const rina = drawFor(winners, grand.id);
+    expect(winners.remove(rina.id)).toBe("ok");
+    expect(winners.list().items).toEqual([]);
+    expect(winners.get(rina.id)).toBeNull();
+    // Unlike a cancelled row, a deleted one leaves no trace: the person is in the pool for this prize again.
+    expect(winners.eligible(grand.id).map((p) => p.name)).toEqual(["Rina", "Budi"]);
+    picks.push(0);
+    expect(drawFor(winners, grand.id).participantName).toBe("Rina");
+  });
+
+  test("deletes a cancelled winner too, which is how a person who was cancelled can win the prize again", () => {
+    const { winners, guests, prize } = setup();
+    guests("Rina", "Budi");
+    const door = prize("Door Prize", 1);
+    const rina = drawFor(winners, door.id);
+    winners.cancel(rina.id);
+    expect(winners.eligible(door.id).map((p) => p.name)).toEqual(["Budi"]);
+    expect(winners.remove(rina.id)).toBe("ok");
+    expect(winners.eligible(door.id).map((p) => p.name)).toEqual(["Rina", "Budi"]);
+  });
+
+  test("leaves the other winners alone", () => {
+    const { winners, guests, prize, picks } = setup();
+    guests("Rina", "Budi", "Citra");
+    const door = prize("Door Prize", 3);
+    const rina = drawFor(winners, door.id);
+    picks.push(0);
+    const budi = drawFor(winners, door.id);
+    expect(winners.remove(rina.id)).toBe("ok");
+    expect(winners.list().items.map((w) => w.id)).toEqual([budi.id]);
+  });
+
+  test("answers not_found for an unknown id, and a second time", () => {
+    const { winners, guests, prize } = setup();
+    guests("Rina");
+    const grand = prize("Grand Prize", 1);
+    const rina = drawFor(winners, grand.id);
+    expect(winners.remove(99)).toBe("not_found");
+    expect(winners.remove(rina.id)).toBe("ok");
+    expect(winners.remove(rina.id)).toBe("not_found");
+  });
+
+  test("refuses the winner who is on the big screen, keeps the row, and allows it after Done", () => {
+    const { db, winners, guests, prize } = setup();
+    guests("Rina");
+    const grand = prize("Grand Prize", 1);
+    const rina = drawFor(winners, grand.id);
+    db.run("UPDATE draw_state SET phase = 'reveal', winner_id = ?, revealed_at = 't' WHERE id = 1", [rina.id]);
+    expect(winners.remove(rina.id)).toBe("on_screen");
+    expect(winners.list().items).toHaveLength(1);
+    db.run("UPDATE draw_state SET phase = 'standby', winner_id = NULL, revealed_at = NULL WHERE id = 1");
+    expect(winners.remove(rina.id)).toBe("ok");
+  });
+});

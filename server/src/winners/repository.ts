@@ -46,6 +46,8 @@ type CancelResult =
   | { kind: "not_found" }
   | { kind: "already_cancelled" };
 
+type RemoveResult = "ok" | "not_found" | "on_screen";
+
 // Prize order first (the order they are drawn in), then when the winner was drawn.
 const ORDER = "ORDER BY p.position, p.id, w.drawn_at, w.id";
 
@@ -147,6 +149,19 @@ export function createWinnersRepository(
       if (winner.status === "cancelled") return { kind: "already_cancelled" };
       db.run("UPDATE winners SET cancelled_at = ? WHERE id = ?", [now().toISOString(), id]);
       return { kind: "ok", winner: find(id)! };
+    },
+
+    /**
+     * Deletes a winner for good, valid or cancelled. Unlike a cancel it leaves no row, so the person is in the pool
+     * for that prize again and the slot is free. Not the winner who is on the big screen: Done comes first.
+     */
+    remove(id: number): RemoveResult {
+      return db.transaction((): RemoveResult => {
+        if (!find(id)) return "not_found";
+        if (db.query("SELECT 1 FROM draw_state WHERE winner_id = ?").get(id)) return "on_screen";
+        db.run("DELETE FROM winners WHERE id = ?", [id]);
+        return "ok";
+      })();
     },
 
     /** Every row for the CSV, with the email and the prize value, in the order of `list`. */

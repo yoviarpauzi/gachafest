@@ -31,7 +31,7 @@ function setup() {
     names.map((name) => participants.insert({ name, email: `${name.toLowerCase()}@x.example` })!);
   const prize = (name: string, quota: number, value: number | null = null) =>
     prizes.insert({ name, winners: quota, tier: "basic", value });
-  return { app, repo, cookie, picks, guests, prize };
+  return { app, repo, cookie, picks, guests, prize, db };
 }
 
 type App = ReturnType<typeof setup>["app"];
@@ -211,5 +211,63 @@ describe("authentication", () => {
     expect(body).not.toContain('"Prize"');
 
     expect(repo.list()).toEqual(before);
+  });
+});
+
+describe("DELETE /api/admin/winners/:id", () => {
+  const withOneWinner = () => {
+    const ctx = setup();
+    ctx.guests("Rina", "Budi");
+    const door = ctx.prize("Door Prize", 1);
+    const drawn = ctx.repo.draw(door.id);
+    if (drawn.kind !== "ok") throw new Error("no winner");
+    return { ...ctx, door, winner: drawn.winner };
+  };
+
+  test("deletes the winner, answers 204 with no body, and the person is eligible for the prize again", async () => {
+    const { app, repo, cookie, door, winner } = withOneWinner();
+    const res = await call(app, "DELETE", `/${winner.id}`, { cookie });
+    expect(res.status).toBe(204);
+    expect(await res.text()).toBe("");
+    expect(repo.list().items).toEqual([]);
+    expect(repo.eligible(door.id).map((p) => p.name)).toEqual(["Rina", "Budi"]);
+  });
+
+  test("deletes a cancelled winner as well", async () => {
+    const { app, repo, cookie, winner } = withOneWinner();
+    await call(app, "POST", `/${winner.id}/cancel`, { cookie });
+    expect((await call(app, "DELETE", `/${winner.id}`, { cookie })).status).toBe(204);
+    expect(repo.list().items).toEqual([]);
+  });
+
+  test("answers 404 once it is gone", async () => {
+    const { app, cookie, winner } = withOneWinner();
+    await call(app, "DELETE", `/${winner.id}`, { cookie });
+    const again = await call(app, "DELETE", `/${winner.id}`, { cookie });
+    expect(again.status).toBe(404);
+    expect(await again.json()).toEqual({ error: "not_found" });
+  });
+
+  test("answers 409 on_screen for the winner shown on the big screen, and keeps the row", async () => {
+    const { app, repo, cookie, db, winner } = withOneWinner();
+    db.run("UPDATE draw_state SET phase = 'reveal', winner_id = ?, revealed_at = 't' WHERE id = 1", [winner.id]);
+    const res = await call(app, "DELETE", `/${winner.id}`, { cookie });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "on_screen" });
+    expect(repo.list().items).toHaveLength(1);
+  });
+
+  test("answers 422 for a non-numeric, zero or negative id", async () => {
+    const { app, cookie } = withOneWinner();
+    for (const id of ["abc", "0", "-1", "1.5"]) {
+      expect((await call(app, "DELETE", `/${id}`, { cookie })).status).toBe(422);
+    }
+  });
+
+  test("answers 401 without a session, even for a bad id, and deletes nothing", async () => {
+    const { app, repo, winner } = withOneWinner();
+    expect((await call(app, "DELETE", `/${winner.id}`)).status).toBe(401);
+    expect((await call(app, "DELETE", "/abc")).status).toBe(401);
+    expect(repo.list().items).toHaveLength(1);
   });
 });

@@ -43,6 +43,15 @@ export function createWinnersRoutes(deps: { repo: ReturnType<typeof createWinner
       },
       { params: idParams },
     )
+    .delete(
+      "/:id",
+      ({ params, status }) => {
+        const result = repo.remove(Number(params.id));
+        if (result === "ok") return status(204);
+        return result === "on_screen" ? status(409, { error: "on_screen" }) : status(404, { error: "not_found" });
+      },
+      { params: idParams },
+    )
     .get(
       "/export.csv",
       () =>
