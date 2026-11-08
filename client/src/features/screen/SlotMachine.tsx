@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import leverUrl from "../../assets/screen/lever.svg";
 import { nameFontSize } from "./nameSize";
+import { useTextMeasure } from "./useTextMeasure";
 import { Scaled } from "./Scaled";
 
 const WIDTH = 884;
@@ -12,7 +13,7 @@ export const WINDOW_HEIGHT = 272;
 
 /** Text in the reel window at the Figma size (85 px), smaller only when it would not fit. */
 export function MachineText({ children }: { children: string }) {
-  const { fontSize } = nameFontSize(children, WINDOW_WIDTH);
+  const { fontSize } = nameFontSize(children, WINDOW_WIDTH, useTextMeasure());
   return (
     <p
       className="relative text-center font-display leading-[1.24] font-extrabold tracking-[-0.85px] whitespace-nowrap text-black-950"

@@ -1,4 +1,5 @@
 import { nameFontSize } from "./nameSize";
+import { useTextMeasure } from "./useTextMeasure";
 
 const NAME_WIDTH = 820;
 const MAX_SIZE = 112;
@@ -9,7 +10,8 @@ const MAX_SIZE = 112;
  * moment the plate is shown, so the winner is not in the page before then.
  */
 export function NamePlate({ name, className = "" }: { name: string | null; className?: string }) {
-  const { fontSize, lines } = name === null ? { fontSize: MAX_SIZE, lines: 1 as const } : nameFontSize(name, NAME_WIDTH);
+  const measure = useTextMeasure();
+  const { fontSize, lines } = name === null ? { fontSize: MAX_SIZE, lines: 1 as const } : nameFontSize(name, NAME_WIDTH, measure);
 
   return (
     <div data-fx="plate" className={`flex w-250 flex-col items-center ${className}`}>
@@ -24,6 +26,7 @@ export function NamePlate({ name, className = "" }: { name: string | null; class
                 lineHeight: lines === 1 ? "1.143" : "1.05",
                 textShadow: "0px 3px 4px rgba(192, 151, 89, 0.35)",
                 whiteSpace: lines === 1 ? "nowrap" : "normal",
+                overflowWrap: "anywhere",
               }}
             >
               {name}

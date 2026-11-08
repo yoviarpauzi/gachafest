@@ -11,8 +11,9 @@ import { NamePlate } from "./NamePlate";
 import { formatRupiah } from "../prizes/format";
 import { PrizeRibbon } from "./PrizeRibbon";
 import { ReelStrip } from "./ReelStrip";
-import { SlotMachine } from "./SlotMachine";
+import { MachineText, SlotMachine } from "./SlotMachine";
 import { useReveal } from "./useReveal";
+import { useTextMeasure } from "./useTextMeasure";
 import type { View } from "./view";
 
 // Room for the prize name: beside the two rules when there is a value under it, or the whole hero area when there is none.
@@ -40,8 +41,9 @@ export function RevealView({
   const plateShown = view.stage === "plate" || view.stage === "done";
   const value = view.prize?.value ?? null;
   const headingName = view.prize?.name ?? "";
-  const headingFit = fitBox(headingName || "x", HEADING_BOX);
-  const heroFit = fitBox(headingName || "x", HERO_BOX);
+  const measure = useTextMeasure();
+  const headingFit = fitBox(headingName || "x", HEADING_BOX, measure);
+  const heroFit = fitBox(headingName || "x", HERO_BOX, measure);
 
   return (
     <div ref={scope} className="absolute inset-0">
@@ -55,6 +57,10 @@ export function RevealView({
         <PrizeRibbon prize={view.prize} scale={1125 / 990} textScale={1.25} className="absolute top-32.5 left-99.5" />
         <SlotMachine scale={1.2} className="absolute top-110 left-102.5">
           <ReelStrip reel={view.reel} winner={view.winnerName} />
+          {/* What the window says with reduced motion, where the reel does not spin: no name until the plate. */}
+          <div data-fx="reel-hold" aria-hidden="true" className="opacity-0">
+            <MachineText>Drawing...</MachineText>
+          </div>
         </SlotMachine>
       </div>
 

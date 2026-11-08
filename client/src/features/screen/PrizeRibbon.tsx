@@ -2,6 +2,7 @@ import ribbonUrl from "../../assets/screen/ribbon-shape.svg";
 import { formatRupiah } from "../prizes/format";
 import type { ScreenState } from "./api";
 import { fitBox } from "./nameSize";
+import { useTextMeasure } from "./useTextMeasure";
 import { Scaled } from "./Scaled";
 
 const WIDTH = 990;
@@ -31,6 +32,7 @@ export function PrizeRibbon({
   const value = prize?.value ?? null;
   // The content is laid out at the ribbon's scale, so the text carries only the difference.
   const k = textScale / scale;
+  const measure = useTextMeasure();
 
   return (
     <Scaled width={WIDTH} height={HEIGHT} scale={scale} className={className}>
@@ -39,7 +41,7 @@ export function PrizeRibbon({
         {value === null ? (
           <p
             className="relative max-w-175 text-center font-display font-extrabold tracking-[-1.4px] text-balance text-black-950"
-            style={{ fontSize: fitBox(name, { ...TEXT_BOX, maxSize: MAX_NAME_SIZE * k }).fontSize, lineHeight: 1.1 }}
+            style={{ fontSize: fitBox(name, { ...TEXT_BOX, maxSize: MAX_NAME_SIZE * k }, measure).fontSize, lineHeight: 1.1 }}
           >
             {name}
           </p>

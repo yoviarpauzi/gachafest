@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { nameFontSize } from "./nameSize";
+import { fitMax } from "./nameSize";
+import { useTextMeasure } from "./useTextMeasure";
 import { buildReelStrip } from "./reel";
 import { WINDOW_HEIGHT, WINDOW_WIDTH } from "./SlotMachine";
 
@@ -15,6 +16,13 @@ const MAX_SIZE = 85;
 export function ReelStrip({ reel, winner }: { reel: string[]; winner: string }) {
   const strip = useMemo(() => buildReelStrip(reel, winner), [reel, winner]);
   const items = useMemo(() => (reel.length > 0 ? [...strip, reel[0]!] : strip), [strip, reel]);
+  const measure = useTextMeasure();
+  // Every name gets the largest size at which it fits its own slot (87 px high), on as many lines as that takes,
+  // so a long name gets smaller instead of running into the names around it.
+  const fits = useMemo(
+    () => items.map((name) => fitMax(name, { width: WINDOW_WIDTH, height: ITEM_PITCH, maxSize: MAX_SIZE }, measure)),
+    [items, measure],
+  );
 
   return (
     <div
@@ -26,12 +34,12 @@ export function ReelStrip({ reel, winner }: { reel: string[]; winner: string }) 
       style={{ top: WINDOW_HEIGHT / 2 - ITEM_PITCH / 2, height: items.length * ITEM_PITCH }}
     >
       {items.map((name, index) => {
-        const { fontSize, lines } = nameFontSize(name, WINDOW_WIDTH);
+        const { fontSize, lines } = fits[index]!;
         return (
           <p
             key={index}
             data-reel-item
-            // A name that does not fit on one line wraps into the space around it instead of running out of the window.
+            // A name that does not fit on one line wraps inside its own slot, at a size that keeps it there.
             className={`absolute inset-x-0 flex items-center justify-center text-center font-display font-extrabold tracking-[-0.85px] ${
               lines === 1 ? "whitespace-nowrap" : "text-balance"
             }`}
@@ -39,7 +47,8 @@ export function ReelStrip({ reel, winner }: { reel: string[]; winner: string }) 
               top: index * ITEM_PITCH,
               height: ITEM_PITCH,
               lineHeight: lines === 1 ? `${ITEM_PITCH}px` : 1.1,
-              fontSize: Math.min(MAX_SIZE, fontSize),
+              fontSize,
+              overflowWrap: "anywhere",
               color: "color-mix(in srgb, var(--color-black-950) calc((1 - var(--t, 0)) * 100%), rgb(143 97 40 / 0.55))",
               filter: "blur(calc((var(--blur, 0) + var(--t, 0) * 0.6) * 1px))",
             }}

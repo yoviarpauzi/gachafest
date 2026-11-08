@@ -39,8 +39,11 @@ function addReel(tl: gsap.core.Timeline, scope: HTMLElement, schedule: Schedule,
   for (const item of strip.querySelectorAll<HTMLElement>("[data-reel-item]")) item.style.setProperty("--t", "1");
 
   if (reducedMotion) {
-    gsap.set(strip, { y: -travel });
-    paintStrip(strip, 0);
+    // No spin, and the winner must not sit in the window for the whole reveal: the strip is hidden and the
+    // window just says the draw is under way, until the plate fades in at the end.
+    gsap.set(strip, { autoAlpha: 0 });
+    const hold = scope.querySelector<HTMLElement>('[data-fx="reel-hold"]');
+    if (hold) gsap.set(hold, { autoAlpha: 1 });
     return;
   }
 
@@ -152,7 +155,14 @@ export function buildRevealTimeline(scope: HTMLElement, options: { tier: Tier; r
 
   addReel(tl, scope, schedule, options.reducedMotion);
   if (options.reducedMotion) {
-    addPlate(tl, scope, seconds(schedule.total) - 1, 1);
+    // The last second: the screen dims a little and the plate fades in, ending exactly when the animation ends.
+    const at = seconds(schedule.total) - 1;
+    const dim = scope.querySelector<HTMLElement>('[data-fx="dim"]');
+    if (dim) {
+      tl.fromTo(dim, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.35, ease: "power1.out" }, at);
+      tl.to(dim, { autoAlpha: 0, duration: 0.65, ease: "power1.in" }, at + 0.35);
+    }
+    addPlate(tl, scope, at, 1);
     return tl;
   }
 
