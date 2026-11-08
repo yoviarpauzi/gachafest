@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { createAdminRoutes } from "./guard";
 import { SESSION_TTL_MS, signSession } from "./session";
 
@@ -74,5 +74,57 @@ describe("createAdminRoutes guard", () => {
     for (const path of ["/api/admin//ping", "/API/admin/ping", "/api/admin/ping#frag"]) {
       expect((await get(app, path)).status).not.toBe(200);
     }
+  });
+});
+
+describe("createAdminRoutes guard runs before validation", () => {
+  const post = (app: Handler, path: string, body: string, cookie?: string) =>
+    app.handle(
+      new Request(`http://localhost${path}`, {
+        method: "POST",
+        headers: { "content-type": "application/json", ...(cookie ? { cookie } : {}) },
+        body,
+      }),
+    );
+
+  function schemaApp() {
+    const { deps, validCookie } = setup();
+    const items = new Elysia().post("/nested-items", () => ({ ok: true }), {
+      body: t.Object({ name: t.String() }),
+    });
+    const app = new Elysia().use(
+      createAdminRoutes(deps)
+        .post("/items", () => ({ ok: true }), { body: t.Object({ name: t.String() }) })
+        .get("/count", () => ({ ok: true }), { query: t.Object({ n: t.Numeric() }) })
+        .use(items),
+    );
+    return { app, validCookie };
+  }
+
+  test("an unauthenticated invalid body gets 401, not 422 with schema details", async () => {
+    const { app } = schemaApp();
+    const res = await post(app, "/api/admin/items", JSON.stringify({}));
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+  });
+
+  test("an unauthenticated invalid query gets 401", async () => {
+    const { app } = schemaApp();
+    expect((await get(app, "/api/admin/count?n=abc")).status).toBe(401);
+  });
+
+  test("an unauthenticated invalid body on a nested plugin route gets 401", async () => {
+    const { app } = schemaApp();
+    expect((await post(app, "/api/admin/nested-items", JSON.stringify({}))).status).toBe(401);
+  });
+
+  test("an authenticated invalid body still gets 422 and a valid body gets 200", async () => {
+    const { app, validCookie } = schemaApp();
+    expect((await post(app, "/api/admin/items", JSON.stringify({}), validCookie())).status).toBe(
+      422,
+    );
+    expect(
+      (await post(app, "/api/admin/items", JSON.stringify({ name: "x" }), validCookie())).status,
+    ).toBe(200);
   });
 });
