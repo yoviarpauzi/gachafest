@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ScreenRouteImport } from './routes/screen'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminDrawRouteImport } from './routes/admin.draw'
 import { Route as AdminParticipantsRouteImport } from './routes/admin.participants'
@@ -31,6 +32,11 @@ const AdminRoute = AdminRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScreenRoute = ScreenRouteImport.update({
+  id: '/screen',
+  path: '/screen',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/screen': typeof ScreenRoute
   '/admin/draw': typeof AdminDrawRoute
   '/admin/participants': typeof AdminParticipantsRoute
   '/admin/prizes': typeof AdminPrizesRoute
@@ -72,6 +79,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/screen': typeof ScreenRoute
   '/admin/draw': typeof AdminDrawRoute
   '/admin/participants': typeof AdminParticipantsRoute
   '/admin/prizes': typeof AdminPrizesRoute
@@ -83,6 +91,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
+  '/screen': typeof ScreenRoute
   '/admin/draw': typeof AdminDrawRoute
   '/admin/participants': typeof AdminParticipantsRoute
   '/admin/prizes': typeof AdminPrizesRoute
@@ -95,6 +104,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/screen'
     | '/admin/draw'
     | '/admin/participants'
     | '/admin/prizes'
@@ -104,6 +114,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/screen'
     | '/admin/draw'
     | '/admin/participants'
     | '/admin/prizes'
@@ -114,6 +125,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/login'
+    | '/screen'
     | '/admin/draw'
     | '/admin/participants'
     | '/admin/prizes'
@@ -125,6 +137,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ScreenRoute: typeof ScreenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -148,6 +161,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/screen': {
+      id: '/screen'
+      path: '/screen'
+      fullPath: '/screen'
+      preLoaderRoute: typeof ScreenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -210,6 +230,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   LoginRoute: LoginRoute,
+  ScreenRoute: ScreenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
