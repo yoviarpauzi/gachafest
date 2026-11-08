@@ -6,7 +6,26 @@ const secret32 = "s".repeat(32);
 describe("parseEnv", () => {
   test("accepts valid env", () => {
     const env = parseEnv({ ADMIN_PASSWORD: "hunter2", SESSION_SECRET: secret32 });
-    expect(env).toEqual({ ADMIN_PASSWORD: "hunter2", SESSION_SECRET: secret32 });
+    expect(env).toEqual({
+      ADMIN_PASSWORD: "hunter2",
+      SESSION_SECRET: secret32,
+      DATABASE_PATH: "data/gachafest.db",
+    });
+  });
+
+  test("uses the given DATABASE_PATH", () => {
+    const env = parseEnv({
+      ADMIN_PASSWORD: "hunter2",
+      SESSION_SECRET: secret32,
+      DATABASE_PATH: "/tmp/other.db",
+    });
+    expect(env.DATABASE_PATH).toBe("/tmp/other.db");
+  });
+
+  test("throws naming DATABASE_PATH when empty", () => {
+    expect(() =>
+      parseEnv({ ADMIN_PASSWORD: "hunter2", SESSION_SECRET: secret32, DATABASE_PATH: "" }),
+    ).toThrow(/DATABASE_PATH/);
   });
 
   test("throws naming ADMIN_PASSWORD when missing or empty", () => {

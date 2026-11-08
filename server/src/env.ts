@@ -3,6 +3,7 @@ import { z } from "zod";
 const envSchema = z.object({
   ADMIN_PASSWORD: z.string().min(1),
   SESSION_SECRET: z.string().min(32),
+  DATABASE_PATH: z.string().min(1).default("data/gachafest.db"),
 });
 
 export type Env = z.infer<typeof envSchema>;
