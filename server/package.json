@@ -8,11 +8,15 @@
     "test": "bun test"
   },
   "dependencies": {
+    "csv-parse": "^7.0.3",
     "elysia": "^1.4.31",
+    "fflate": "^0.8.3",
+    "read-excel-file": "^9.3.14",
     "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/bun": "^1.4.4",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "write-excel-file": "^4.1.1"
   }
 }
