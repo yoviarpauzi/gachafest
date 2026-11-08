@@ -5,7 +5,8 @@ export function formatRupiah(value: number): string {
   return `Rp ${String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
 }
 
-export type RupiahInput = { kind: "empty" } | { kind: "ok"; value: number } | { kind: "invalid" };
+export type RupiahInput =
+  { kind: "empty" } | { kind: "ok"; value: number } | { kind: "invalid" };
 
 /**
  * Reads what the organizer typed in the value field. An optional `Rp`, spaces anywhere, then either plain
@@ -18,6 +19,7 @@ export function parseRupiah(text: string): RupiahInput {
   if (!/^(\d+|\d{1,3}(\.\d{3})+)$/.test(stripped)) return { kind: "invalid" };
 
   const value = Number(stripped.replaceAll(".", ""));
-  if (!Number.isSafeInteger(value) || value < 1 || value > MAX_PRIZE_VALUE) return { kind: "invalid" };
+  if (!Number.isSafeInteger(value) || value < 1 || value > MAX_PRIZE_VALUE)
+    return { kind: "invalid" };
   return { kind: "ok", value };
 }

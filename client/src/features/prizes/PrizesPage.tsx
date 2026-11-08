@@ -11,7 +11,8 @@ import { PrizeFormDialog } from "./PrizeFormDialog";
 import { PrizesTable } from "./PrizesTable";
 import { prizesQueryOptions, useReorderPrizesMutation } from "./queries";
 
-const SUBTITLE = "Set how many winners each prize has and the order you draw them in.";
+const SUBTITLE =
+  "Set how many winners each prize has and the order you draw them in.";
 
 export function PrizesPage() {
   const list = useQuery(prizesQueryOptions);
@@ -164,7 +165,9 @@ export function PrizesPage() {
         }
       />
       {noticeLine}
-      {orderFailed && <Alert title="Could not save the new order.">Try again.</Alert>}
+      {orderFailed && (
+        <Alert title="Could not save the new order.">Try again.</Alert>
+      )}
       <PrizesTable
         items={data.items}
         onEdit={startEdit}
@@ -173,7 +176,8 @@ export function PrizesPage() {
         reorderDisabled={savingOrder}
       />
       <p className="text-body-sm text-gold-muted">
-        Drag the handle to change the draw order. A prize cannot go below the winners it already has.
+        Drag the handle to change the draw order. A prize cannot go below the
+        winners it already has.
       </p>
       {dialogs}
     </div>

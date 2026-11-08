@@ -12,7 +12,13 @@ type Props = {
   onChooseAnother: () => void;
 };
 
-export function ImportPreviewView({ preview, importing, error, onImport, onChooseAnother }: Props) {
+export function ImportPreviewView({
+  preview,
+  importing,
+  error,
+  onImport,
+  onChooseAnother,
+}: Props) {
   const { problems, problemsTotal } = preview;
   const nothingToImport = preview.valid === 0;
 
@@ -39,7 +45,8 @@ export function ImportPreviewView({ preview, importing, error, onImport, onChoos
       {problemsTotal > 0 && (
         <section className="overflow-hidden rounded-lg border border-black-700 bg-black-850">
           <h2 className="p-4 text-label-md text-ink">
-            Rows to fix ({problemsTotal.toLocaleString("en-US")}). These rows are skipped.
+            Rows to fix ({problemsTotal.toLocaleString("en-US")}). These rows
+            are skipped.
           </h2>
           <ul>
             {problems.map((problem) => (
@@ -47,22 +54,33 @@ export function ImportPreviewView({ preview, importing, error, onImport, onChoos
                 key={problem.row}
                 className="flex items-start gap-6 border-t border-black-700 px-4 py-3"
               >
-                <span className="w-25 shrink-0 text-label-md text-ink">Row {problem.row}</span>
-                <span className="text-body-md text-error">{problem.reason}</span>
+                <span className="w-25 shrink-0 text-label-md text-ink">
+                  Row {problem.row}
+                </span>
+                <span className="text-body-md text-error">
+                  {problem.reason}
+                </span>
               </li>
             ))}
           </ul>
           {problemsTotal > problems.length && (
             <p className="border-t border-black-700 px-4 py-3 text-body-sm text-gold-muted">
-              Showing the first {problems.length} of {problemsTotal.toLocaleString("en-US")}.
+              Showing the first {problems.length} of{" "}
+              {problemsTotal.toLocaleString("en-US")}.
             </p>
           )}
         </section>
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button size="md" disabled={importing || nothingToImport} onClick={onImport}>
-          {importing ? "Importing..." : `Import ${plural(preview.valid, "guest")}`}
+        <Button
+          size="md"
+          disabled={importing || nothingToImport}
+          onClick={onImport}
+        >
+          {importing
+            ? "Importing..."
+            : `Import ${plural(preview.valid, "guest")}`}
         </Button>
         <Button variant="ghost" disabled={importing} onClick={onChooseAnother}>
           Choose another file

@@ -1,4 +1,9 @@
-import { keepPreviousData, queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  queryOptions,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import type { ApiError } from "../../lib/api";
 import {
   addParticipant,
@@ -21,14 +26,17 @@ export const participantsQueryOptions = (search: { q: string; page: number }) =>
   });
 
 export function usePreviewMutation() {
-  return useMutation<ImportPreview, ApiError, File>({ mutationFn: previewImport });
+  return useMutation<ImportPreview, ApiError, File>({
+    mutationFn: previewImport,
+  });
 }
 
 export function useImportMutation() {
   const queryClient = useQueryClient();
   return useMutation<ImportResult, ApiError, File>({
     mutationFn: importFile,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["participants"] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["participants"] }),
   });
 }
 
@@ -36,15 +44,21 @@ export function useAddParticipantMutation() {
   const queryClient = useQueryClient();
   return useMutation<Participant, ApiError, { name: string; email: string }>({
     mutationFn: addParticipant,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["participants"] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["participants"] }),
   });
 }
 
 export function useUpdateParticipantMutation() {
   const queryClient = useQueryClient();
-  return useMutation<Participant, ApiError, { id: number; name: string; email: string }>({
+  return useMutation<
+    Participant,
+    ApiError,
+    { id: number; name: string; email: string }
+  >({
     mutationFn: ({ id, name, email }) => updateParticipant(id, { name, email }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["participants"] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["participants"] }),
   });
 }
 
@@ -52,7 +66,8 @@ export function useDeleteParticipantMutation() {
   const queryClient = useQueryClient();
   return useMutation<void, ApiError, number>({
     mutationFn: deleteParticipant,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["participants"] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["participants"] }),
   });
 }
 
@@ -60,6 +75,7 @@ export function useToggleMutation() {
   const queryClient = useQueryClient();
   return useMutation<Participant, ApiError, { id: number; disabled: boolean }>({
     mutationFn: ({ id, disabled }) => setParticipantDisabled(id, disabled),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["participants"] }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ["participants"] }),
   });
 }

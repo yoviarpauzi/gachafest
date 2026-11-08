@@ -2,7 +2,12 @@ import { ApiError, apiFetch } from "../../lib/api";
 
 export const PAGE_SIZE = 50;
 
-export type Participant = { id: number; name: string; email: string; disabled: boolean };
+export type Participant = {
+  id: number;
+  name: string;
+  email: string;
+  disabled: boolean;
+};
 export type ParticipantsPage = {
   items: Participant[];
   matching: number;
@@ -17,7 +22,11 @@ export type ImportPreview = {
   problems: { row: number; reason: string }[];
   problemsTotal: number;
 };
-export type ImportResult = { imported: number; duplicates: number; problemsTotal: number };
+export type ImportResult = {
+  imported: number;
+  duplicates: number;
+  problemsTotal: number;
+};
 
 const BASE = "/api/admin/participants";
 
@@ -36,14 +45,22 @@ function upload<T>(path: string, file: File) {
   return apiFetch<T>(path, { method: "POST", body: form });
 }
 
-export const previewImport = (file: File) => upload<ImportPreview>(`${BASE}/import/preview`, file);
-export const importFile = (file: File) => upload<ImportResult>(`${BASE}/import`, file);
+export const previewImport = (file: File) =>
+  upload<ImportPreview>(`${BASE}/import/preview`, file);
+export const importFile = (file: File) =>
+  upload<ImportResult>(`${BASE}/import`, file);
 
 export const addParticipant = (input: { name: string; email: string }) =>
   apiFetch<Participant>(BASE, { method: "POST", body: JSON.stringify(input) });
 
-export const updateParticipant = (id: number, patch: { name?: string; email?: string }) =>
-  apiFetch<Participant>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+export const updateParticipant = (
+  id: number,
+  patch: { name?: string; email?: string },
+) =>
+  apiFetch<Participant>(`${BASE}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(patch),
+  });
 
 /** A 404 means it is already gone, which is what the caller wanted, so it is not an error here. */
 export async function deleteParticipant(id: number): Promise<void> {
@@ -55,7 +72,10 @@ export async function deleteParticipant(id: number): Promise<void> {
 }
 
 export const setParticipantDisabled = (id: number, disabled: boolean) =>
-  apiFetch<Participant>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify({ disabled }) });
+  apiFetch<Participant>(`${BASE}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ disabled }),
+  });
 
 // Moved to lib/api.ts, where the other features reach it too.
 export { errorCode } from "../../lib/api";

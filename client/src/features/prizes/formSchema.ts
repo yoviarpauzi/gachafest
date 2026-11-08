@@ -3,12 +3,21 @@ import type { PrizeInput, Tier } from "./api";
 import { parseRupiah } from "./format";
 
 /** The form keeps every field as text, so what the organizer typed is what gets validated. */
-export type PrizeFormValues = { name: string; value: string; winners: string; tier: Tier };
+export type PrizeFormValues = {
+  name: string;
+  value: string;
+  winners: string;
+  tier: Tier;
+};
 
 export const MAX_WINNERS = 1000;
 
 export const prizeFormSchema = z.object({
-  name: z.string().trim().min(1, "Enter a prize name.").max(60, "That name is too long."),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Enter a prize name.")
+    .max(60, "That name is too long."),
   value: z
     .string()
     .refine(
@@ -19,7 +28,8 @@ export const prizeFormSchema = z.object({
     .string()
     .trim()
     .refine(
-      (text) => /^\d+$/.test(text) && Number(text) >= 1 && Number(text) <= MAX_WINNERS,
+      (text) =>
+        /^\d+$/.test(text) && Number(text) >= 1 && Number(text) <= MAX_WINNERS,
       "Enter a whole number from 1 to 1,000.",
     ),
   tier: z.enum(["basic", "premium"]),

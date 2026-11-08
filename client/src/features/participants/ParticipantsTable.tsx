@@ -1,4 +1,8 @@
-import { rowPaginationFeature, tableFeatures, useTable } from "@tanstack/react-table";
+import {
+  rowPaginationFeature,
+  tableFeatures,
+  useTable,
+} from "@tanstack/react-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import { createContext, useContext, useMemo } from "react";
 import { Button } from "../../components/Button";
@@ -8,7 +12,8 @@ import { PAGE_SIZE, type Participant } from "./api";
 
 const features = tableFeatures({ rowPaginationFeature });
 
-const headCell = "px-4 py-3 text-left text-label-sm font-medium text-gold-muted";
+const headCell =
+  "px-4 py-3 text-left text-label-sm font-medium text-gold-muted";
 const cell = "px-4 py-4 align-middle";
 
 type Props = {
@@ -22,7 +27,10 @@ type Props = {
   onPageChange: (page: number) => void;
 };
 
-type RowActionHandlers = Pick<Props, "pendingIds" | "onEdit" | "onToggle" | "onDelete">;
+type RowActionHandlers = Pick<
+  Props,
+  "pendingIds" | "onEdit" | "onToggle" | "onDelete"
+>;
 const RowActionsContext = createContext<RowActionHandlers | null>(null);
 
 // The columns never change, so each cell keeps its identity from render to render and the row buttons are
@@ -33,13 +41,19 @@ const columns: ColumnDef<typeof features, Participant>[] = [
     id: "name",
     header: "Name",
     accessorKey: "name",
-    cell: (info) => <span className="text-label-md text-ink">{info.getValue<string>()}</span>,
+    cell: (info) => (
+      <span className="text-label-md text-ink">{info.getValue<string>()}</span>
+    ),
   },
   {
     id: "email",
     header: "Email",
     accessorKey: "email",
-    cell: (info) => <span className="text-body-md text-gold-muted">{info.getValue<string>()}</span>,
+    cell: (info) => (
+      <span className="text-body-md text-gold-muted">
+        {info.getValue<string>()}
+      </span>
+    ),
   },
   {
     id: "status",
@@ -66,10 +80,18 @@ function RowActions({ participant }: { participant: Participant }) {
   const busy = actions.pendingIds.has(participant.id);
   return (
     <div className="flex justify-end gap-5">
-      <RowAction busy={busy} name={participant.name} onClick={() => actions.onEdit(participant)}>
+      <RowAction
+        busy={busy}
+        name={participant.name}
+        onClick={() => actions.onEdit(participant)}
+      >
         Edit
       </RowAction>
-      <RowAction busy={busy} name={participant.name} onClick={() => actions.onToggle(participant)}>
+      <RowAction
+        busy={busy}
+        name={participant.name}
+        onClick={() => actions.onToggle(participant)}
+      >
         {participant.disabled ? "Enable" : "Disable"}
       </RowAction>
       <RowAction
@@ -126,7 +148,9 @@ export function ParticipantsTable({
               <tr key={headerGroup.id} className="border-b border-black-700">
                 {headerGroup.headers.map((header) => (
                   <th key={header.id} scope="col" className={headCell}>
-                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                    {header.isPlaceholder ? null : (
+                      <table.FlexRender header={header} />
+                    )}
                   </th>
                 ))}
               </tr>
@@ -136,7 +160,10 @@ export function ParticipantsTable({
             {table.getRowModel().rows.map((row) => (
               <tr key={row.id} className="border-b border-black-700">
                 {row.getAllCells().map((c) => (
-                  <td key={c.id} className={`${cell} ${c.column.id === "action" ? "text-right" : ""}`}>
+                  <td
+                    key={c.id}
+                    className={`${cell} ${c.column.id === "action" ? "text-right" : ""}`}
+                  >
                     <table.FlexRender cell={c} />
                   </td>
                 ))}
@@ -146,19 +173,30 @@ export function ParticipantsTable({
         </table>
 
         {/* Always shown, so it is clear there is paging even while everything fits on one page. */}
-        <nav aria-label="Pagination" className="flex items-center justify-between gap-4">
+        <nav
+          aria-label="Pagination"
+          className="flex items-center justify-between gap-4"
+        >
           <p className="text-body-sm text-gold-muted">
             {items.length > 0 &&
               `Showing ${firstShown.toLocaleString("en-US")}–${lastShown.toLocaleString("en-US")} of ${matching.toLocaleString("en-US")}`}
           </p>
           <div className="flex items-center gap-4">
-            <Button variant="ghost" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+            <Button
+              variant="ghost"
+              disabled={page <= 1}
+              onClick={() => onPageChange(page - 1)}
+            >
               Previous
             </Button>
             <span className="text-body-sm text-gold-muted">
               Page {page} of {pageCount}
             </span>
-            <Button variant="ghost" disabled={page >= pageCount} onClick={() => onPageChange(page + 1)}>
+            <Button
+              variant="ghost"
+              disabled={page >= pageCount}
+              onClick={() => onPageChange(page + 1)}
+            >
               Next
             </Button>
           </div>
@@ -170,8 +208,15 @@ export function ParticipantsTable({
 
 export function ParticipantsSkeleton() {
   return (
-    <div role="status" aria-label="Loading participants" className="flex flex-col">
-      <div className={`${headCell} border-b border-black-700`} aria-hidden="true">
+    <div
+      role="status"
+      aria-label="Loading participants"
+      className="flex flex-col"
+    >
+      <div
+        className={`${headCell} border-b border-black-700`}
+        aria-hidden="true"
+      >
         <span className="inline-block w-65">Name</span>
         <span className="inline-block w-95">Email</span>
         <span className="inline-block w-35">Status</span>

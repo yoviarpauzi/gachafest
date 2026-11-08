@@ -31,7 +31,10 @@ import { formatRupiah } from "./format";
 
 const features = tableFeatures({});
 
-type RowActionHandlers = { onEdit: (prize: Prize) => void; onDelete: (prize: Prize) => void };
+type RowActionHandlers = {
+  onEdit: (prize: Prize) => void;
+  onDelete: (prize: Prize) => void;
+};
 const RowActionsContext = createContext<RowActionHandlers | null>(null);
 
 // What a row's drag handle needs from the row's `useSortable`, passed down by context so the columns can
@@ -57,13 +60,17 @@ const columns: ColumnDef<typeof features, Prize>[] = [
   {
     id: "rank",
     header: "#",
-    cell: ({ row }) => <span className="text-label-md text-gold-muted">{row.index + 1}</span>,
+    cell: ({ row }) => (
+      <span className="text-label-md text-gold-muted">{row.index + 1}</span>
+    ),
   },
   {
     id: "name",
     header: "Prize",
     accessorKey: "name",
-    cell: (info) => <span className="text-label-md text-ink">{info.getValue<string>()}</span>,
+    cell: (info) => (
+      <span className="text-label-md text-ink">{info.getValue<string>()}</span>
+    ),
   },
   {
     id: "value",
@@ -78,7 +85,9 @@ const columns: ColumnDef<typeof features, Prize>[] = [
     id: "winners",
     header: "Winners",
     accessorKey: "winners",
-    cell: (info) => <span className="text-body-md text-ink">{info.getValue<number>()}</span>,
+    cell: (info) => (
+      <span className="text-body-md text-ink">{info.getValue<number>()}</span>
+    ),
   },
   {
     id: "tier",
@@ -117,7 +126,8 @@ const widths: Record<string, string> = {
 };
 
 // 16px before the first cell, 12px between cells, 16px after the last.
-const padding = (id: string) => (id === "handle" ? "pl-4 pr-3" : id === "actions" ? "pr-4" : "pr-3");
+const padding = (id: string) =>
+  id === "handle" ? "pl-4 pr-3" : id === "actions" ? "pr-4" : "pr-3";
 
 function DragHandle({ prize }: { prize: Prize }) {
   const handle = useContext(SortableHandleContext);
@@ -145,10 +155,19 @@ function RowActions({ prize }: { prize: Prize }) {
   if (!actions) return null;
   return (
     <div className="flex justify-end gap-5">
-      <RowAction busy={false} name={prize.name} onClick={() => actions.onEdit(prize)}>
+      <RowAction
+        busy={false}
+        name={prize.name}
+        onClick={() => actions.onEdit(prize)}
+      >
         Edit
       </RowAction>
-      <RowAction busy={false} name={prize.name} tone="danger" onClick={() => actions.onDelete(prize)}>
+      <RowAction
+        busy={false}
+        name={prize.name}
+        tone="danger"
+        onClick={() => actions.onDelete(prize)}
+      >
         Delete
       </RowAction>
     </div>
@@ -164,8 +183,15 @@ function SortableRow({
   disabled: boolean;
   children: ReactNode;
 }) {
-  const { setNodeRef, setActivatorNodeRef, attributes, listeners, transform, transition, isDragging } =
-    useSortable({ id: prize.id, disabled });
+  const {
+    setNodeRef,
+    setActivatorNodeRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: prize.id, disabled });
   const handle = useMemo(
     () => ({ setActivatorNodeRef, attributes, listeners, disabled }),
     [setActivatorNodeRef, attributes, listeners, disabled],
@@ -201,21 +227,32 @@ export function PrizesTable({
 }) {
   // Rows are keyed by prize id: the default key is the row's index, which would follow the position, not
   // the prize, and a moved row would be remounted and lose focus.
-  const table = useTable({ features, columns, data: items, getRowId: (prize) => String(prize.id) });
+  const table = useTable({
+    features,
+    columns,
+    data: items,
+    getRowId: (prize) => String(prize.id),
+  });
   const actions = useMemo(() => ({ onEdit, onDelete }), [onEdit, onDelete]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
-  const nameOf = (id: unknown) => items.find((prize) => prize.id === id)?.name ?? "Prize";
-  const positionOf = (id: unknown) => items.findIndex((prize) => prize.id === id) + 1;
+  const nameOf = (id: unknown) =>
+    items.find((prize) => prize.id === id)?.name ?? "Prize";
+  const positionOf = (id: unknown) =>
+    items.findIndex((prize) => prize.id === id) + 1;
   const announcements: Announcements = {
     onDragStart: ({ active }) =>
       `Picked up ${nameOf(active.id)}. Position ${positionOf(active.id)} of ${items.length}.`,
     onDragOver: ({ active, over }) =>
-      over ? `${nameOf(active.id)} moved to position ${positionOf(over.id)} of ${items.length}.` : undefined,
+      over
+        ? `${nameOf(active.id)} moved to position ${positionOf(over.id)} of ${items.length}.`
+        : undefined,
     onDragEnd: ({ active, over }) =>
       `${nameOf(active.id)} dropped at position ${positionOf(over?.id ?? active.id)} of ${items.length}.`,
     onDragCancel: () => "Reordering cancelled.",
@@ -238,7 +275,8 @@ export function PrizesTable({
         accessibility={{
           announcements,
           screenReaderInstructions: {
-            draggable: "Press Space to pick up, the arrow keys to move, Space to drop, Escape to cancel.",
+            draggable:
+              "Press Space to pick up, the arrow keys to move, Space to drop, Escape to cancel.",
           },
         }}
       >
@@ -257,18 +295,30 @@ export function PrizesTable({
                     scope="col"
                     className={`${padding(header.column.id)} py-3 text-left text-label-sm font-medium text-gold-muted`}
                   >
-                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                    {header.isPlaceholder ? null : (
+                      <table.FlexRender header={header} />
+                    )}
                   </th>
                 ))}
               </tr>
             ))}
           </thead>
-          <SortableContext items={items.map((prize) => prize.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={items.map((prize) => prize.id)}
+            strategy={verticalListSortingStrategy}
+          >
             <tbody>
               {table.getRowModel().rows.map((row) => (
-                <SortableRow key={row.id} prize={row.original} disabled={reorderDisabled}>
+                <SortableRow
+                  key={row.id}
+                  prize={row.original}
+                  disabled={reorderDisabled}
+                >
                   {row.getAllCells().map((c) => (
-                    <td key={c.id} className={`${padding(c.column.id)} py-4 align-middle`}>
+                    <td
+                      key={c.id}
+                      className={`${padding(c.column.id)} py-4 align-middle`}
+                    >
                       <table.FlexRender cell={c} />
                     </td>
                   ))}

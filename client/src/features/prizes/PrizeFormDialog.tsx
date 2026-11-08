@@ -8,7 +8,11 @@ import { errorBody, errorCode } from "../../lib/api";
 import { issueMessage } from "../../lib/form";
 import type { Prize } from "./api";
 import { formatRupiah, parseRupiah } from "./format";
-import { prizeFormSchema, toPrizeInput, type PrizeFormValues } from "./formSchema";
+import {
+  prizeFormSchema,
+  toPrizeInput,
+  type PrizeFormValues,
+} from "./formSchema";
 import { useCreatePrizeMutation, useUpdatePrizeMutation } from "./queries";
 
 type Props = {
@@ -22,7 +26,11 @@ type Props = {
 export function PrizeFormDialog(props: Props) {
   const { open, onClose, onDone } = props;
   return (
-    <Modal open={open} onClose={onClose} title={props.mode === "edit" ? "Edit prize" : "Add prize"}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={props.mode === "edit" ? "Edit prize" : "Add prize"}
+    >
       <PrizeForm prize={props.prize} onClose={onClose} onDone={onDone} />
     </Modal>
   );
@@ -31,9 +39,17 @@ export function PrizeFormDialog(props: Props) {
 const TIER_LOCKED = "The tier can't change once the prize has been drawn.";
 
 // What the server said when it refused a save, so each reason can be shown where it belongs.
-type ServerError = { kind: "generic" } | { kind: "below_drawn"; drawn: number } | { kind: "tier_locked" };
+type ServerError =
+  | { kind: "generic" }
+  | { kind: "below_drawn"; drawn: number }
+  | { kind: "tier_locked" };
 
-const emptyValues: PrizeFormValues = { name: "", value: "", winners: "1", tier: "basic" };
+const emptyValues: PrizeFormValues = {
+  name: "",
+  value: "",
+  winners: "1",
+  tier: "basic",
+};
 
 const valuesOf = (prize: Prize): PrizeFormValues => ({
   name: prize.name,
@@ -80,9 +96,14 @@ function PrizeForm({
       } catch (error) {
         const code = errorCode(error);
         if (code === "below_drawn") {
-          setServerError({ kind: "below_drawn", drawn: Number(errorBody(error)?.drawn) || 0 });
+          setServerError({
+            kind: "below_drawn",
+            drawn: Number(errorBody(error)?.drawn) || 0,
+          });
         } else {
-          setServerError({ kind: code === "tier_locked" ? "tier_locked" : "generic" });
+          setServerError({
+            kind: code === "tier_locked" ? "tier_locked" : "generic",
+          });
         }
       } finally {
         submitting.current = false;
@@ -134,7 +155,8 @@ function PrizeForm({
             onBlur={() => {
               // A valid amount is shown the way the table shows it; anything else is left for the organizer to fix.
               const parsed = parseRupiah(field.state.value);
-              if (parsed.kind === "ok") field.handleChange(formatRupiah(parsed.value));
+              if (parsed.kind === "ok")
+                field.handleChange(formatRupiah(parsed.value));
               else if (parsed.kind === "empty") field.handleChange("");
               field.handleBlur();
             }}
@@ -175,7 +197,11 @@ function PrizeForm({
         {(field) => (
           <SegmentedControl
             label="Reveal tier"
-            hint={tierLocked ? TIER_LOCKED : "Premium plays the full cinematic reveal. Basic is shorter."}
+            hint={
+              tierLocked
+                ? TIER_LOCKED
+                : "Premium plays the full cinematic reveal. Basic is shorter."
+            }
             value={field.state.value}
             options={[
               { value: "basic", label: "Basic" },
@@ -190,14 +216,22 @@ function PrizeForm({
         )}
       </form.Field>
 
-      {(serverError?.kind === "generic" || serverError?.kind === "tier_locked") && (
+      {(serverError?.kind === "generic" ||
+        serverError?.kind === "tier_locked") && (
         <p role="alert" className="text-body-sm text-error">
-          {serverError.kind === "tier_locked" ? TIER_LOCKED : "Something went wrong. Try again."}
+          {serverError.kind === "tier_locked"
+            ? TIER_LOCKED
+            : "Something went wrong. Try again."}
         </p>
       )}
 
       <div className="flex items-center justify-end gap-3">
-        <Button type="button" variant="ghost" disabled={pending} onClick={onClose}>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={pending}
+          onClick={onClose}
+        >
           Cancel
         </Button>
         <Button type="submit" size="md" disabled={pending}>

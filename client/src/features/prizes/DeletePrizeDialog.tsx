@@ -15,8 +15,16 @@ type Props = {
 /** The Figma confirmation pattern: a question, what will happen, the safe button first. */
 export function DeletePrizeDialog({ prize, onClose, onDeleted }: Props) {
   return (
-    <Modal open={prize !== null} onClose={onClose} title="Delete this prize?" size="sm" alert>
-      {prize && <DeleteBody prize={prize} onClose={onClose} onDeleted={onDeleted} />}
+    <Modal
+      open={prize !== null}
+      onClose={onClose}
+      title="Delete this prize?"
+      size="sm"
+      alert
+    >
+      {prize && (
+        <DeleteBody prize={prize} onClose={onClose} onDeleted={onDeleted} />
+      )}
     </Modal>
   );
 }
@@ -62,10 +70,20 @@ function DeleteBody({
         </p>
       )}
       <div className="flex items-center justify-end gap-3">
-        <Button type="button" variant="ghost" disabled={remove.isPending} onClick={onClose}>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={remove.isPending}
+          onClick={onClose}
+        >
           Keep prize
         </Button>
-        <Button type="button" size="md" disabled={remove.isPending} onClick={confirm}>
+        <Button
+          type="button"
+          size="md"
+          disabled={remove.isPending}
+          onClick={confirm}
+        >
           {remove.isPending ? "Deleting..." : "Delete prize"}
         </Button>
       </div>

@@ -13,11 +13,25 @@ type Props = {
 };
 
 /** The Figma confirmation pattern: a question, what will happen, the safe button first. */
-export function DeleteParticipantDialog({ participant, onClose, onDeleted }: Props) {
+export function DeleteParticipantDialog({
+  participant,
+  onClose,
+  onDeleted,
+}: Props) {
   return (
-    <Modal open={participant !== null} onClose={onClose} title="Delete this participant?" size="sm" alert>
+    <Modal
+      open={participant !== null}
+      onClose={onClose}
+      title="Delete this participant?"
+      size="sm"
+      alert
+    >
       {participant && (
-        <DeleteBody participant={participant} onClose={onClose} onDeleted={onDeleted} />
+        <DeleteBody
+          participant={participant}
+          onClose={onClose}
+          onDeleted={onDeleted}
+        />
       )}
     </Modal>
   );
@@ -54,9 +68,9 @@ function DeleteBody({
   return (
     <div className="flex flex-col gap-6">
       <p className="text-body-md text-gold-muted">
-        {participant.name} ({participant.email}) will be removed from the list and can no longer be
-        drawn. This cannot be undone. To keep the guest but leave them out of the draw, disable them
-        instead.
+        {participant.name} ({participant.email}) will be removed from the list
+        and can no longer be drawn. This cannot be undone. To keep the guest but
+        leave them out of the draw, disable them instead.
       </p>
       {error && (
         <p role="alert" className="text-body-sm text-error">
@@ -66,10 +80,20 @@ function DeleteBody({
         </p>
       )}
       <div className="flex items-center justify-end gap-3">
-        <Button type="button" variant="ghost" disabled={remove.isPending} onClick={onClose}>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={remove.isPending}
+          onClick={onClose}
+        >
           Keep participant
         </Button>
-        <Button type="button" size="md" disabled={remove.isPending} onClick={confirm}>
+        <Button
+          type="button"
+          size="md"
+          disabled={remove.isPending}
+          onClick={confirm}
+        >
           {remove.isPending ? "Deleting..." : "Delete participant"}
         </Button>
       </div>

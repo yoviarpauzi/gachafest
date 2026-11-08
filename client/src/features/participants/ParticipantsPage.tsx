@@ -5,7 +5,12 @@ import { Button } from "../../components/Button";
 import { FileDropzone } from "../../components/FileDropzone";
 import { PageHeader } from "../../components/PageHeader";
 import { SearchField } from "../../components/SearchField";
-import { errorCode, PAGE_SIZE, type ImportPreview, type Participant } from "./api";
+import {
+  errorCode,
+  PAGE_SIZE,
+  type ImportPreview,
+  type Participant,
+} from "./api";
 import { DeleteParticipantDialog } from "./DeleteParticipantDialog";
 import { checkFile, messageFor } from "./files";
 import { plural } from "./format";
@@ -20,10 +25,14 @@ import {
 } from "./queries";
 import type { ParticipantsSearch } from "./search";
 
-const SUBTITLE = "Import your guest list. Each email becomes one entry in the draw.";
+const SUBTITLE =
+  "Import your guest list. Each email becomes one entry in the draw.";
 const SEARCH_DEBOUNCE_MS = 300;
 
-type View = { kind: "browse" } | { kind: "import" } | { kind: "preview"; file: File; preview: ImportPreview };
+type View =
+  | { kind: "browse" }
+  | { kind: "import" }
+  | { kind: "preview"; file: File; preview: ImportPreview };
 
 export function ParticipantsPage({
   search,
@@ -73,8 +82,17 @@ export function ParticipantsPage({
   // A page past the end (an old URL, or the list shrank) goes to the last page instead of showing nothing.
   const data = list.data;
   useEffect(() => {
-    if (!data || data.items.length > 0 || data.matching === 0 || search.page === 1) return;
-    onSearchChange({ q: search.q, page: Math.max(1, Math.ceil(data.matching / PAGE_SIZE)) });
+    if (
+      !data ||
+      data.items.length > 0 ||
+      data.matching === 0 ||
+      search.page === 1
+    )
+      return;
+    onSearchChange({
+      q: search.q,
+      page: Math.max(1, Math.ceil(data.matching / PAGE_SIZE)),
+    });
   }, [data, search.q, search.page, onSearchChange]);
 
   async function chooseFile(file: File) {
@@ -121,7 +139,10 @@ export function ParticipantsPage({
     setPendingIds(new Set(toggling.current));
     setToggleFailed(false);
     try {
-      await toggleMutation.mutateAsync({ id: participant.id, disabled: !participant.disabled });
+      await toggleMutation.mutateAsync({
+        id: participant.id,
+        disabled: !participant.disabled,
+      });
     } catch {
       setToggleFailed(true);
     } finally {
@@ -187,7 +208,10 @@ export function ParticipantsPage({
   if (view.kind === "preview") {
     return (
       <div className="flex flex-col gap-8">
-        <PageHeader title="Participants" subtitle="Check the file before anything is saved." />
+        <PageHeader
+          title="Participants"
+          subtitle="Check the file before anything is saved."
+        />
         <ImportPreviewView
           preview={view.preview}
           importing={importMutation.isPending}
@@ -230,7 +254,12 @@ export function ParticipantsPage({
           }
         />
         <div className="flex items-center justify-between gap-6">
-          <SearchField label="Search participants" value={input} onChange={setInput} disabled />
+          <SearchField
+            label="Search participants"
+            value={input}
+            onChange={setInput}
+            disabled
+          />
           <p role="status" className="text-body-md text-gold-muted">
             Loading participants...
           </p>
@@ -242,7 +271,11 @@ export function ParticipantsPage({
 
   // ---- Empty list, or the organizer chose "Import file": the dropzone
   if (data.total === 0 || view.kind === "import") {
-    const dropzoneState = previewMutation.isPending ? "reading" : dropError ? "error" : "idle";
+    const dropzoneState = previewMutation.isPending
+      ? "reading"
+      : dropError
+        ? "error"
+        : "idle";
     const { title, message } = messageFor(dropError ?? undefined);
     return (
       <div className="flex flex-col gap-8">
@@ -308,7 +341,9 @@ export function ParticipantsPage({
           {notice}
         </p>
       )}
-      {toggleFailed && <Alert title="Could not update that guest.">Try again.</Alert>}
+      {toggleFailed && (
+        <Alert title="Could not update that guest.">Try again.</Alert>
+      )}
 
       <div className="flex items-center justify-between gap-6">
         <SearchField
@@ -317,7 +352,10 @@ export function ParticipantsPage({
           onChange={setInput}
           maxLength={100}
         />
-        <p role="status" className="text-body-md whitespace-pre text-gold-muted">
+        <p
+          role="status"
+          className="text-body-md whitespace-pre text-gold-muted"
+        >
           {`${plural(data.total, "participant")}  ·  ${data.disabled.toLocaleString("en-US")} disabled`}
         </p>
       </div>
