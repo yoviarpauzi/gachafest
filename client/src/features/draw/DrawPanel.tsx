@@ -37,7 +37,7 @@ export function DrawPanel({
   const drawing = reveal !== null && !reveal.skipped && remaining > 0;
   const noEligible = reveal === null && state.eligibleCount === 0;
   // The newest winner is not counted until the animation is over, so the progress does not give it away.
-  const shownDrawn = drawing ? prize.drawn - 1 : prize.drawn;
+  const shownDrawn = Math.max(0, drawing ? prize.drawn - 1 : prize.drawn);
 
   return (
     <section
@@ -78,7 +78,14 @@ export function DrawPanel({
           <Button className="w-full" disabled>
             Drawing...
           </Button>
-          <Button variant="ghost" className="w-full" data-focus="skip" disabled={busy} onClick={onSkip}>
+          {/* aria-disabled, not `disabled`: a disabled button cannot be focused, and the focus is handed on to it. */}
+          <Button
+            variant="ghost"
+            className="w-full aria-disabled:opacity-50"
+            data-focus="skip"
+            aria-disabled={busy || undefined}
+            onClick={onSkip}
+          >
             Skip animation
           </Button>
         </>
@@ -91,7 +98,12 @@ export function DrawPanel({
             <p className="text-body-sm text-gold-muted">Showing on the big screen</p>
             <p className="font-display text-heading-lg text-ink">{reveal.winner.participantName}</p>
           </div>
-          <Button className="w-full" data-focus="done" disabled={busy} onClick={onDone}>
+          <Button
+            className="w-full aria-disabled:opacity-50"
+            data-focus="done"
+            aria-disabled={busy || undefined}
+            onClick={onDone}
+          >
             Done, back to Lucky Winners
           </Button>
           <p className="text-body-sm text-gold-muted">

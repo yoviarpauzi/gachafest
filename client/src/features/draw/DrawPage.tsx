@@ -16,6 +16,7 @@ import { DrawPanel } from "./DrawPanel";
 import { LatestWinners } from "./LatestWinners";
 import { PrizeQueue } from "./PrizeQueue";
 import {
+  DRAW_POLL_MS,
   drawQueryOptions,
   useDoneMutation,
   useDrawMutation,
@@ -31,8 +32,10 @@ const QUIET = new Set(["reveal_pending", "not_revealing", "no_eligible", "no_ope
 
 export function DrawPage() {
   const draw = useQuery(drawQueryOptions);
-  const prizes = useQuery(prizesQueryOptions);
-  const winners = useQuery(winnersQueryOptions);
+  // The prize order and the winners are asked again with the draw state, so a second tab or window shows
+  // the same counts and the same history as the one that pressed Draw.
+  const prizes = useQuery({ ...prizesQueryOptions, refetchInterval: DRAW_POLL_MS });
+  const winners = useQuery({ ...winnersQueryOptions, refetchInterval: DRAW_POLL_MS });
   const navigate = useNavigate();
 
   const select = useSelectPrizeMutation();
@@ -41,6 +44,8 @@ export function DrawPage() {
   const done = useDoneMutation();
 
   const remaining = useAnimationRemaining(draw.data, draw.dataUpdatedAt);
+  const state = draw.data;
+  const drawing = state?.reveal != null && !state.reveal.skipped && remaining > 0;
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState<"draw" | "other" | null>(null);
 
@@ -61,6 +66,20 @@ export function DrawPage() {
     (panel?.querySelector<HTMLElement>(`[data-focus="${target}"]`) ?? panel?.querySelector("button"))?.focus();
   });
 
+  // When the animation ends, by itself or by Skip, the Skip button disappears. If the focus was on it, or has
+  // fallen to the page, it goes to the Done button, so the keyboard never loses its place.
+  const wasDrawing = useRef(false);
+  useEffect(() => {
+    if (wasDrawing.current && !drawing) {
+      const panel = panelRef.current;
+      const active = document.activeElement;
+      if (!active || active === document.body || panel?.contains(active)) {
+        panel?.querySelector<HTMLElement>('[data-focus="done"]')?.focus();
+      }
+    }
+    wasDrawing.current = drawing;
+  }, [drawing]);
+
   async function run(action: () => Promise<unknown>, kind: "draw" | "other", focusAfter?: "skip" | "draw") {
     if (acting.current) return;
     acting.current = true;
@@ -78,7 +97,6 @@ export function DrawPage() {
     }
   }
 
-  const state = draw.data;
   const prizeList = prizes.data?.items;
 
   // ---- Loading, or one of the three requests failed
@@ -110,7 +128,6 @@ export function DrawPage() {
     );
   }
 
-  const drawing = state.reveal !== null && !state.reveal.skipped && remaining > 0;
   const onScreenId = state.reveal?.winner.id ?? null;
 
   // The newest valid winners, without the one on the big screen until Done is pressed.

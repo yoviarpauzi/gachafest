@@ -22,7 +22,7 @@ export function PrizeQueue({
   return (
     <ol className="flex flex-col gap-3">
       {prizes.map((prize, index) => {
-        const drawn = prize.id === pendingPrizeId ? prize.drawn - 1 : prize.drawn;
+        const drawn = Math.max(0, prize.id === pendingPrizeId ? prize.drawn - 1 : prize.drawn);
         const done = drawn >= prize.winners;
         const active = prize.id === activeId;
         const canSelect = selectable && !done;
