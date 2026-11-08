@@ -43,15 +43,23 @@ export function LoginCard() {
       apiError?.status === 401 ? "Incorrect password. Try again." : "Something went wrong. Try again.";
   }
 
+  const submitting = useRef(false);
   const form = useForm({
     defaultValues: { password: "" },
     validators: { onSubmit: loginSchema },
     onSubmit: async ({ value }) => {
-      const ok = await mutation.mutateAsync(value).then(
-        () => true,
-        () => false,
-      );
-      if (ok) await navigate({ to: "/admin" });
+      // `isPending` lags a tick behind, so a double click or double Enter would send two requests.
+      if (submitting.current) return;
+      submitting.current = true;
+      try {
+        const ok = await mutation.mutateAsync(value).then(
+          () => true,
+          () => false,
+        );
+        if (ok) await navigate({ to: "/admin" });
+      } finally {
+        submitting.current = false;
+      }
     },
   });
 
