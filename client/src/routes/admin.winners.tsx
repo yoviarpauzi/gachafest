@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { WinnersPage } from "../features/winners/WinnersPage";
 
-// Placeholder: the real Winners page replaces this route (organizer sub-project 5).
 export const Route = createFileRoute("/admin/winners")({
-  component: () => <h1 className="font-display text-heading-lg text-ink">Winners</h1>,
+  component: WinnersPage,
 });
