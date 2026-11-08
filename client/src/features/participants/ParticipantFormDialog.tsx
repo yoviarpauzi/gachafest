@@ -4,42 +4,61 @@ import { Button } from "../../components/Button";
 import { Modal } from "../../components/Modal";
 import { TextInput } from "../../components/TextInput";
 import { issueMessage } from "../../lib/form";
-import { errorCode } from "./api";
-import { addParticipantSchema } from "./addSchema";
-import { useAddParticipantMutation } from "./queries";
+import { errorCode, type Participant } from "./api";
+import { participantFormSchema } from "./formSchema";
+import { useAddParticipantMutation, useUpdateParticipantMutation } from "./queries";
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  /** Called with the name of the participant that was added. */
-  onAdded: (name: string) => void;
-};
+  /** Called with the name of the participant that was added or saved. */
+  onDone: (name: string) => void;
+} & ({ mode: "add"; participant?: undefined } | { mode: "edit"; participant: Participant });
 
-export function AddParticipantDialog({ open, onClose, onAdded }: Props) {
+/** One form for adding a participant and for editing one; edit starts from the participant's data. */
+export function ParticipantFormDialog(props: Props) {
+  const { open, onClose, onDone } = props;
+  const editing = props.mode === "edit";
   return (
-    <Modal open={open} onClose={onClose} title="Add participant">
-      <AddParticipantForm onClose={onClose} onAdded={onAdded} />
+    <Modal open={open} onClose={onClose} title={editing ? "Edit participant" : "Add participant"}>
+      <ParticipantForm
+        participant={props.participant}
+        onClose={onClose}
+        onDone={onDone}
+      />
     </Modal>
   );
 }
 
-function AddParticipantForm({ onClose, onAdded }: Omit<Props, "open">) {
+function ParticipantForm({
+  participant,
+  onClose,
+  onDone,
+}: {
+  participant?: Participant;
+  onClose: () => void;
+  onDone: (name: string) => void;
+}) {
   const add = useAddParticipantMutation();
+  const update = useUpdateParticipantMutation();
   const [serverError, setServerError] = useState<"email_taken" | "generic" | null>(null);
   // `isPending` lags a tick behind a click, so this ref is the guard against a double submit.
   const submitting = useRef(false);
-  const pending = add.isPending;
+  const pending = add.isPending || update.isPending;
+  const editing = participant !== undefined;
 
   const form = useForm({
-    defaultValues: { name: "", email: "" },
-    validators: { onSubmit: addParticipantSchema },
+    defaultValues: { name: participant?.name ?? "", email: participant?.email ?? "" },
+    validators: { onSubmit: participantFormSchema },
     onSubmit: async ({ value }) => {
       if (submitting.current) return;
       submitting.current = true;
       setServerError(null);
       try {
-        const participant = await add.mutateAsync(value);
-        onAdded(participant.name);
+        const saved = participant
+          ? await update.mutateAsync({ id: participant.id, ...value })
+          : await add.mutateAsync(value);
+        onDone(saved.name);
       } catch (error) {
         setServerError(errorCode(error) === "email_taken" ? "email_taken" : "generic");
       } finally {
@@ -112,7 +131,7 @@ function AddParticipantForm({ onClose, onAdded }: Omit<Props, "open">) {
           Cancel
         </Button>
         <Button type="submit" size="md" disabled={pending}>
-          {pending ? "Adding..." : "Add participant"}
+          {pending ? (editing ? "Saving..." : "Adding...") : editing ? "Save changes" : "Add participant"}
         </Button>
       </div>
     </form>

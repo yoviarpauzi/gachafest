@@ -2,10 +2,12 @@ import { keepPreviousData, queryOptions, useMutation, useQueryClient } from "@ta
 import type { ApiError } from "../../lib/api";
 import {
   addParticipant,
+  deleteParticipant,
   importFile,
   listParticipants,
   previewImport,
   setParticipantDisabled,
+  updateParticipant,
   type ImportPreview,
   type ImportResult,
   type Participant,
@@ -34,6 +36,22 @@ export function useAddParticipantMutation() {
   const queryClient = useQueryClient();
   return useMutation<Participant, ApiError, { name: string; email: string }>({
     mutationFn: addParticipant,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["participants"] }),
+  });
+}
+
+export function useUpdateParticipantMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<Participant, ApiError, { id: number; name: string; email: string }>({
+    mutationFn: ({ id, name, email }) => updateParticipant(id, { name, email }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["participants"] }),
+  });
+}
+
+export function useDeleteParticipantMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<void, ApiError, number>({
+    mutationFn: deleteParticipant,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["participants"] }),
   });
 }

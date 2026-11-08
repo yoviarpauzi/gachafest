@@ -42,7 +42,19 @@ export const importFile = (file: File) => upload<ImportResult>(`${BASE}/import`,
 export const addParticipant = (input: { name: string; email: string }) =>
   apiFetch<Participant>(BASE, { method: "POST", body: JSON.stringify(input) });
 
-export const setParticipantDisabled =(id: number, disabled: boolean) =>
+export const updateParticipant = (id: number, patch: { name?: string; email?: string }) =>
+  apiFetch<Participant>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify(patch) });
+
+/** A 404 means it is already gone, which is what the caller wanted, so it is not an error here. */
+export async function deleteParticipant(id: number): Promise<void> {
+  try {
+    await apiFetch<void>(`${BASE}/${id}`, { method: "DELETE" });
+  } catch (error) {
+    if (!(error instanceof ApiError && error.status === 404)) throw error;
+  }
+}
+
+export const setParticipantDisabled = (id: number, disabled: boolean) =>
   apiFetch<Participant>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify({ disabled }) });
 
 /** The `error` code the server put in a failed response, if any. */

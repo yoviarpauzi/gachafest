@@ -5,11 +5,12 @@ import { Button } from "../../components/Button";
 import { FileDropzone } from "../../components/FileDropzone";
 import { PageHeader } from "../../components/PageHeader";
 import { SearchField } from "../../components/SearchField";
-import { AddParticipantDialog } from "./AddParticipantDialog";
 import { errorCode, PAGE_SIZE, type ImportPreview, type Participant } from "./api";
+import { DeleteParticipantDialog } from "./DeleteParticipantDialog";
 import { checkFile, messageFor } from "./files";
 import { plural } from "./format";
 import { ImportPreviewView } from "./ImportPreviewView";
+import { ParticipantFormDialog } from "./ParticipantFormDialog";
 import { ParticipantsSkeleton, ParticipantsTable } from "./ParticipantsTable";
 import {
   participantsQueryOptions,
@@ -41,6 +42,8 @@ export function ParticipantsPage({
   const [importError, setImportError] = useState<string | undefined>();
   const [notice, setNotice] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Participant | null>(null);
+  const [deleting, setDeleting] = useState<Participant | null>(null);
   const [toggleFailed, setToggleFailed] = useState(false);
   const [pendingIds, setPendingIds] = useState<ReadonlySet<number>>(new Set());
 
@@ -143,15 +146,41 @@ export function ParticipantsPage({
       Add participant
     </Button>
   );
+  // The dialogs. Edit and delete only exist where the list does, but they are cheap to render closed.
   const addDialog = (
-    <AddParticipantDialog
+    <ParticipantFormDialog
+      mode="add"
       open={adding}
       onClose={() => setAdding(false)}
-      onAdded={(name) => {
+      onDone={(name) => {
         setAdding(false);
         setNotice(`${name} added.`);
       }}
     />
+  );
+  const editDialogs = (
+    <>
+      {editing && (
+        <ParticipantFormDialog
+          mode="edit"
+          participant={editing}
+          open
+          onClose={() => setEditing(null)}
+          onDone={(name) => {
+            setEditing(null);
+            setNotice(`${name} updated.`);
+          }}
+        />
+      )}
+      <DeleteParticipantDialog
+        participant={deleting}
+        onClose={() => setDeleting(null)}
+        onDeleted={(name) => {
+          setDeleting(null);
+          setNotice(`${name} deleted.`);
+        }}
+      />
+    </>
   );
 
   // ---- Preview
@@ -301,11 +330,20 @@ export function ParticipantsPage({
           matching={data.matching}
           page={search.page}
           pendingIds={pendingIds}
+          onEdit={(participant) => {
+            setNotice(null);
+            setEditing(participant);
+          }}
           onToggle={toggle}
+          onDelete={(participant) => {
+            setNotice(null);
+            setDeleting(participant);
+          }}
           onPageChange={(page) => onSearchChange({ q: search.q, page })}
         />
       )}
       {addDialog}
+      {editDialogs}
     </div>
   );
 }
