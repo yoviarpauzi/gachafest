@@ -17,6 +17,20 @@ export function remainingMs(args: {
 }
 
 /**
+ * Milliseconds since the winner was saved, on the server's clock and never below 0: what the big screen
+ * needs to start its timeline at the right point. Same arithmetic as `remainingMs`.
+ */
+export function elapsedMs(args: {
+  serverNow: string;
+  revealedAt: string;
+  fetchedAt: number;
+  clientNow: number;
+}): number {
+  const serverNowEstimate = Date.parse(args.serverNow) + (args.clientNow - args.fetchedAt);
+  return Math.max(0, serverNowEstimate - Date.parse(args.revealedAt));
+}
+
+/**
  * Time left of the reveal animation for the page: 0 when nothing is being revealed, when the animation was
  * skipped, or when it is over. Re-checked four times a second while it is still running.
  */
