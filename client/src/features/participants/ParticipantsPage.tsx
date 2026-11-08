@@ -5,6 +5,7 @@ import { Button } from "../../components/Button";
 import { FileDropzone } from "../../components/FileDropzone";
 import { PageHeader } from "../../components/PageHeader";
 import { SearchField } from "../../components/SearchField";
+import { AddParticipantDialog } from "./AddParticipantDialog";
 import { errorCode, PAGE_SIZE, type ImportPreview, type Participant } from "./api";
 import { checkFile, messageFor } from "./files";
 import { plural } from "./format";
@@ -39,6 +40,7 @@ export function ParticipantsPage({
   const [dropError, setDropError] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | undefined>();
   const [notice, setNotice] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
   const [toggleFailed, setToggleFailed] = useState(false);
   const [pendingIds, setPendingIds] = useState<ReadonlySet<number>>(new Set());
 
@@ -130,6 +132,28 @@ export function ParticipantsPage({
     setDropError(null);
   };
 
+  const addButton = (
+    <Button
+      variant="secondary"
+      onClick={() => {
+        setNotice(null);
+        setAdding(true);
+      }}
+    >
+      Add participant
+    </Button>
+  );
+  const addDialog = (
+    <AddParticipantDialog
+      open={adding}
+      onClose={() => setAdding(false)}
+      onAdded={(name) => {
+        setAdding(false);
+        setNotice(`${name} added.`);
+      }}
+    />
+  );
+
   // ---- Preview
   if (view.kind === "preview") {
     return (
@@ -193,7 +217,11 @@ export function ParticipantsPage({
     const { title, message } = messageFor(dropError ?? undefined);
     return (
       <div className="flex flex-col gap-8">
-        <PageHeader title="Participants" subtitle={SUBTITLE} />
+        <PageHeader
+          title="Participants"
+          subtitle={SUBTITLE}
+          actions={data.total === 0 ? addButton : undefined}
+        />
         <FileDropzone
           state={dropzoneState}
           title={title}
@@ -215,6 +243,7 @@ export function ParticipantsPage({
             </Button>
           </div>
         )}
+        {addDialog}
       </div>
     );
   }
@@ -226,16 +255,19 @@ export function ParticipantsPage({
         title="Participants"
         subtitle={SUBTITLE}
         actions={
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setNotice(null);
-              setDropError(null);
-              setView({ kind: "import" });
-            }}
-          >
-            Import file
-          </Button>
+          <>
+            {addButton}
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setNotice(null);
+                setDropError(null);
+                setView({ kind: "import" });
+              }}
+            >
+              Import file
+            </Button>
+          </>
         }
       />
 
@@ -257,7 +289,7 @@ export function ParticipantsPage({
           maxLength={100}
         />
         <p role="status" className="text-body-md whitespace-pre text-gold-muted">
-          {`${data.total.toLocaleString("en-US")} participants  ·  ${data.disabled.toLocaleString("en-US")} disabled`}
+          {`${plural(data.total, "participant")}  ·  ${data.disabled.toLocaleString("en-US")} disabled`}
         </p>
       </div>
 
@@ -273,6 +305,7 @@ export function ParticipantsPage({
           onPageChange={(page) => onSearchChange({ q: search.q, page })}
         />
       )}
+      {addDialog}
     </div>
   );
 }

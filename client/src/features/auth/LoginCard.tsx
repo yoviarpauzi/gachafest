@@ -5,15 +5,10 @@ import { Alert } from "../../components/Alert";
 import { Button } from "../../components/Button";
 import { TextInput } from "../../components/TextInput";
 import { ApiError } from "../../lib/api";
+import { issueMessage } from "../../lib/form";
 import { useLoginMutation } from "./queries";
 import { loginSchema } from "./schema";
 import { useRateLimitLock } from "./useRateLimitLock";
-
-function issueMessage(error: unknown): string | undefined {
-  if (typeof error === "string") return error;
-  if (error && typeof error === "object" && "message" in error) return String(error.message);
-  return undefined;
-}
 
 export function LoginCard() {
   const navigate = useNavigate();

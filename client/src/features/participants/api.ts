@@ -39,7 +39,10 @@ function upload<T>(path: string, file: File) {
 export const previewImport = (file: File) => upload<ImportPreview>(`${BASE}/import/preview`, file);
 export const importFile = (file: File) => upload<ImportResult>(`${BASE}/import`, file);
 
-export const setParticipantDisabled = (id: number, disabled: boolean) =>
+export const addParticipant = (input: { name: string; email: string }) =>
+  apiFetch<Participant>(BASE, { method: "POST", body: JSON.stringify(input) });
+
+export const setParticipantDisabled =(id: number, disabled: boolean) =>
   apiFetch<Participant>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify({ disabled }) });
 
 /** The `error` code the server put in a failed response, if any. */
