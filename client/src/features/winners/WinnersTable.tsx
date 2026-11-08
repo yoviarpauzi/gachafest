@@ -13,6 +13,7 @@ type RowActionHandlers = {
   busyPrizeIds: ReadonlySet<number>;
   onCancel: (winner: Winner) => void;
   onRedraw: (winner: Winner) => void;
+  onDelete: (winner: Winner) => void;
 };
 const RowActionsContext = createContext<RowActionHandlers | null>(null);
 
@@ -66,7 +67,7 @@ function RowActions({ winner }: { winner: Winner }) {
   if (!actions) return null;
   const busy = actions.busyPrizeIds.has(winner.prizeId);
   return (
-    <div className="flex justify-end">
+    <div className="flex items-center justify-end gap-4">
       {winner.status === "valid" ? (
         <RowAction busy={false} name={winner.participantName} onClick={() => actions.onCancel(winner)}>
           Cancel winner
@@ -79,6 +80,10 @@ function RowActions({ winner }: { winner: Winner }) {
           </RowAction>
         )
       )}
+      {/* Cancelling keeps the row and blocks the guest from this prize; deleting removes it, so they can be drawn again. */}
+      <RowAction busy={false} name={winner.participantName} tone="danger" onClick={() => actions.onDelete(winner)}>
+        Delete
+      </RowAction>
     </div>
   );
 }
@@ -88,16 +93,18 @@ export function WinnersTable({
   busyPrizeIds,
   onCancel,
   onRedraw,
+  onDelete,
 }: {
   items: Winner[];
   busyPrizeIds: ReadonlySet<number>;
   onCancel: (winner: Winner) => void;
   onRedraw: (winner: Winner) => void;
+  onDelete: (winner: Winner) => void;
 }) {
   const table = useTable({ features, columns, data: items, getRowId: (winner) => String(winner.id) });
   const actions = useMemo(
-    () => ({ busyPrizeIds, onCancel, onRedraw }),
-    [busyPrizeIds, onCancel, onRedraw],
+    () => ({ busyPrizeIds, onCancel, onRedraw, onDelete }),
+    [busyPrizeIds, onCancel, onRedraw, onDelete],
   );
 
   return (

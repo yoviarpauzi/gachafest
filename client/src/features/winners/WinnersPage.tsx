@@ -10,6 +10,7 @@ import { errorCode } from "../../lib/api";
 import { plural } from "../participants/format";
 import { downloadWinnersCsv, type Winner } from "./api";
 import { CancelWinnerDialog } from "./CancelWinnerDialog";
+import { DeleteWinnerDialog } from "./DeleteWinnerDialog";
 import { useDrawWinnerMutation, winnersQueryOptions } from "./queries";
 import { WinnersTable } from "./WinnersTable";
 
@@ -23,6 +24,7 @@ export function WinnersPage() {
   const navigate = useNavigate();
 
   const [cancelling, setCancelling] = useState<Winner | null>(null);
+  const [deleting, setDeleting] = useState<Winner | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -84,6 +86,22 @@ export function WinnersPage() {
     clearMessages();
     setCancelling(winner);
   };
+
+  const startDelete = (winner: Winner) => {
+    clearMessages();
+    setDeleting(winner);
+  };
+
+  const deleteDialog = (
+    <DeleteWinnerDialog
+      winner={deleting}
+      onClose={() => setDeleting(null)}
+      onDeleted={(name) => {
+        setDeleting(null);
+        setNotice(`${name} deleted.`);
+      }}
+    />
+  );
 
   const cancelDialog = (
     <CancelWinnerDialog
@@ -175,8 +193,10 @@ export function WinnersPage() {
         busyPrizeIds={busyPrizeIds}
         onCancel={startCancel}
         onRedraw={redraw}
+        onDelete={startDelete}
       />
       {cancelDialog}
+      {deleteDialog}
     </div>
   );
 }

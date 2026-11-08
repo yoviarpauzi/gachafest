@@ -1,6 +1,6 @@
 import { queryOptions, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ApiError } from "../../lib/api";
-import { cancelWinner, drawWinner, listWinners, type Winner } from "./api";
+import { cancelWinner, deleteWinner, drawWinner, listWinners, type Winner } from "./api";
 
 export const winnersQueryOptions = queryOptions({ queryKey: ["winners"], queryFn: listWinners });
 
@@ -18,6 +18,18 @@ function useRefreshOnSettled() {
 export function useDrawWinnerMutation() {
   const refresh = useRefreshOnSettled();
   return useMutation<Winner, ApiError, number>({ mutationFn: drawWinner, onSettled: refresh });
+}
+
+// Deleting a winner puts the guest back in the pool, so the Draw page's "eligible guests" changes as well.
+export function useDeleteWinnerMutation() {
+  const refresh = useRefreshOnSettled();
+  const queryClient = useQueryClient();
+  return useMutation<void, ApiError, number>({
+    mutationFn: deleteWinner,
+    onSettled: async () => {
+      await Promise.all([refresh(), queryClient.invalidateQueries({ queryKey: ["draw"] })]);
+    },
+  });
 }
 
 export function useCancelWinnerMutation() {

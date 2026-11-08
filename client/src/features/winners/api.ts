@@ -22,6 +22,18 @@ export const listWinners = () => apiFetch<WinnersList>(BASE);
 export const drawWinner = (prizeId: number) =>
   apiFetch<Winner>(BASE, { method: "POST", body: JSON.stringify({ prizeId }) });
 
+/**
+ * Deletes a winner for good, valid or cancelled: no row is left, so the guest can win the prize again. A winner
+ * that is gone already (404) is what was wanted, so it is not an error.
+ */
+export async function deleteWinner(id: number): Promise<void> {
+  try {
+    await apiFetch<void>(`${BASE}/${id}`, { method: "DELETE" });
+  } catch (error) {
+    if (!(error instanceof ApiError && error.status === 404)) throw error;
+  }
+}
+
 export const cancelWinner = (id: number) => apiFetch<Winner>(`${BASE}/${id}/cancel`, { method: "POST" });
 
 /** Saves the winners as `winners.csv` through the browser's download. A failed request throws an `ApiError`. */

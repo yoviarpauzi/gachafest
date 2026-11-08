@@ -121,7 +121,10 @@ export function DrawPanel({
               </span>
               <div className="flex min-w-0 flex-1 flex-col gap-1 text-body-sm">
                 <p className="text-label-md text-ink">No eligible guests left</p>
-                <p className="text-gold-muted">Re-enable a guest or add participants, then try again.</p>
+                <p className="text-gold-muted">
+                  Every guest is disabled, or was already drawn or cancelled for this prize. Delete a cancelled winner
+                  on the Winners page, re-enable a guest, or add participants.
+                </p>
               </div>
             </div>
           )}
