@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { zipSync } from "fflate";
+import { unzipSync, zipSync } from "fflate";
 import writeExcelFile from "write-excel-file/node";
-import { MAX_ROWS, ParticipantsFileError, parseParticipantsFile } from "./parse";
+import { MAX_LINES, MAX_ROWS, ParticipantsFileError, parseParticipantsFile } from "./parse";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 const csv = (text: string, fileName = "guests.csv") => parseParticipantsFile(fileName, bytes(text));
@@ -178,5 +178,47 @@ describe("XLSX", () => {
     const bomb = zipSync({ "xl/worksheets/sheet1.xml": [new Uint8Array(60 * 1024 * 1024), { level: 9 }] });
     await rejects(parseParticipantsFile("guests.xlsx", bomb), "unsupported_file");
     await rejects(parseParticipantsFile("guests.xlsx", bytes("not a zip at all")), "unsupported_file");
+  });
+});
+
+describe("limits on the work actually done", () => {
+  // The zip central directory is only a claim: read-excel-file inflates from the local headers, so a
+  // forged directory must not get a huge sheet past the check.
+  function forgeCentralDirectorySizes(zip: Uint8Array, size: number) {
+    const forged = zip.slice();
+    const view = new DataView(forged.buffer);
+    for (let i = 0; i + 46 <= forged.length; i++) {
+      if (view.getUint32(i, true) === 0x02014b50) view.setUint32(i + 24, size, true);
+    }
+    return forged;
+  }
+
+  test("an xlsx whose central directory understates a 12 MiB sheet is refused", async () => {
+    const honest = await xlsx([{ sheet: "One", data: [header, [cell("Rina"), cell("rina@x.example")]] }]);
+    const files = unzipSync(honest);
+    const sheet = new TextDecoder().decode(files["xl/worksheets/sheet1.xml"]!);
+    files["xl/worksheets/sheet1.xml"] = new TextEncoder().encode(
+      sheet.replace("</worksheet>", `${" ".repeat(12 * 1024 * 1024)}</worksheet>`),
+    );
+    const forged = forgeCentralDirectorySizes(zipSync(files, { level: 9 }), 1000);
+    expect(forged.length).toBeLessThan(200_000);
+    await rejects(parseParticipantsFile("guests.xlsx", forged), "unsupported_file");
+  });
+
+  test("a normal xlsx is still read", async () => {
+    const file = await xlsx([{ sheet: "One", data: [header, [cell("Rina"), cell("rina@x.example")]] }]);
+    expect((await parseParticipantsFile("guests.xlsx", file)).rows).toHaveLength(1);
+  });
+
+  test("a CSV of blank lines past the line limit answers too_many_rows without parsing them", async () => {
+    await rejects(csv("name,email\n" + "\n".repeat(MAX_LINES + 10)), "too_many_rows");
+    await rejects(csv("name,email\r" + "\r".repeat(MAX_LINES + 10)), "too_many_rows");
+    await rejects(csv("name,email\n" + ",\n".repeat(MAX_LINES + 10)), "too_many_rows");
+  });
+
+  test("a CSV right at the line limit is accepted", async () => {
+    const atLimit = "name,email\n" + "\n".repeat(MAX_LINES - 2) + "Rina,rina@x.example";
+    expect((await csv(atLimit)).rows).toEqual([{ row: MAX_LINES, name: "Rina", email: "rina@x.example" }]);
+    await rejects(csv(atLimit + "\n\n"), "too_many_rows");
   });
 });
