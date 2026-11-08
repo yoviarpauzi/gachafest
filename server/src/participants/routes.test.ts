@@ -21,7 +21,7 @@ function setup() {
     ),
   );
   const cookie = `session=${encodeURIComponent(signSession(now + SESSION_TTL_MS, secret))}`;
-  return { app, repo, cookie };
+  return { app, repo, cookie, db };
 }
 
 type App = ReturnType<typeof setup>["app"];
@@ -481,5 +481,22 @@ describe("POST /api/admin/participants", () => {
     expect((await call(app, "POST", "", { body: {} })).status).toBe(401);
     expect((await call(app, "POST", "", { rawBody: "{not json" })).status).toBe(401);
     expect(repo.list({ q: "", page: 1, pageSize: 10 }).total).toBe(0);
+  });
+});
+
+describe("DELETE /api/admin/participants/:id with winners", () => {
+  test("answers 409 has_winners for someone who has a winner row, cancelled or not, and deletes nothing", async () => {
+    const { app, db, repo, cookie } = setup();
+    repo.insertMany(guests.slice(0, 3));
+    db.run("INSERT INTO prizes (name, winners, position, created_at) VALUES ('Grand Prize', 2, 1, 't')");
+    db.run("INSERT INTO winners (prize_id, participant_id, drawn_at) VALUES (1, 1, 't')");
+    db.run("INSERT INTO winners (prize_id, participant_id, drawn_at, cancelled_at) VALUES (1, 2, 't', 't2')");
+    for (const id of [1, 2]) {
+      const res = await call(app, "DELETE", `/${id}`, { cookie });
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: "has_winners" });
+    }
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).total).toBe(3);
+    expect((await call(app, "DELETE", "/3", { cookie })).status).toBe(204);
   });
 });

@@ -19,7 +19,7 @@ function setup() {
     createAdminRoutes({ sessionSecret: secret, now: () => now }).use(createPrizesRoutes({ repo })),
   );
   const cookie = `session=${encodeURIComponent(signSession(now + SESSION_TTL_MS, secret))}`;
-  return { app, repo, cookie };
+  return { app, repo, cookie, db };
 }
 
 type App = ReturnType<typeof setup>["app"];
@@ -277,5 +277,60 @@ describe("authentication", () => {
     expect((await call(app, "PUT", "/order", { rawBody: "{not json" })).status).toBe(401);
     expect((await call(app, "POST", "", { rawBody: "{not json" })).status).toBe(401);
     expect(repo.list()).toEqual(before);
+  });
+});
+
+describe("rules that depend on winners", () => {
+  // A winner is written straight to the table; these tests are about how the routes answer.
+  let guestNumber = 0;
+  const win = (db: ReturnType<typeof setup>["db"], prizeId: number, cancelled = false) => {
+    const guest = Number(
+      db.run("INSERT INTO participants (name, email, created_at) VALUES ('Rina', ?, 't')", [
+        `rina${++guestNumber}@x.example`,
+      ]).lastInsertRowid,
+    );
+    db.run("INSERT INTO winners (prize_id, participant_id, drawn_at, cancelled_at) VALUES (?, ?, 't', ?)", [
+      prizeId,
+      guest,
+      cancelled ? "t2" : null,
+    ]);
+  };
+
+  test("PATCH answers 409 below_drawn, with the drawn count, when winners would go below it", async () => {
+    const { app, db, repo, cookie } = threePrizes();
+    win(db, 3);
+    win(db, 3);
+    const res = await call(app, "PATCH", "/3", { cookie, body: { winners: 1 } });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "below_drawn", drawn: 2 });
+    expect(repo.list()[2]!.winners).toBe(5);
+    expect((await call(app, "PATCH", "/3", { cookie, body: { winners: 2 } })).status).toBe(200);
+  });
+
+  test("PATCH answers 409 tier_locked for a changed tier once drawn, and accepts the same tier", async () => {
+    const { app, db, repo, cookie } = threePrizes();
+    win(db, 1);
+    const locked = await call(app, "PATCH", "/1", { cookie, body: { tier: "basic" } });
+    expect(locked.status).toBe(409);
+    expect(await locked.json()).toEqual({ error: "tier_locked" });
+    expect(repo.list()[0]!.tier).toBe("premium");
+    const same = await call(app, "PATCH", "/1", {
+      cookie,
+      body: { name: "Grand Prize", value: 10_000_000, winners: 1, tier: "premium" },
+    });
+    expect(same.status).toBe(200);
+  });
+
+  test("DELETE answers 409 has_winners for a prize with a winner row, cancelled ones included", async () => {
+    const { app, db, repo, cookie } = threePrizes();
+    win(db, 1);
+    win(db, 2, true);
+    for (const id of [1, 2]) {
+      const res = await call(app, "DELETE", `/${id}`, { cookie });
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: "has_winners" });
+    }
+    expect(repo.list().length).toBe(3);
+    expect((await call(app, "DELETE", "/3", { cookie })).status).toBe(204);
   });
 });

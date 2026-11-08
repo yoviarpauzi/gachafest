@@ -10,6 +10,8 @@ import { createParticipantsRepository } from "./participants/repository";
 import { createParticipantsRoutes } from "./participants/routes";
 import { createPrizesRepository } from "./prizes/repository";
 import { createPrizesRoutes } from "./prizes/routes";
+import { createWinnersRepository } from "./winners/repository";
+import { createWinnersRoutes } from "./winners/routes";
 import { HOST, listen } from "./server";
 
 const env = parseEnv(process.env);
@@ -21,6 +23,7 @@ if (applied.length > 0) console.log(`Applied migrations: ${applied.join(", ")}`)
 
 const participants = createParticipantsRepository(db);
 const prizes = createPrizesRepository(db);
+const winners = createWinnersRepository(db);
 
 // Bun refuses bigger bodies before they are parsed; the upload handlers enforce the exact 5 MiB limit.
 const app = new Elysia({ serve: { maxRequestBodySize: 6 * 1024 * 1024 } })
@@ -35,7 +38,8 @@ const app = new Elysia({ serve: { maxRequestBodySize: 6 * 1024 * 1024 } })
   .use(
     createAdminRoutes({ sessionSecret: env.SESSION_SECRET, now: Date.now })
       .use(createParticipantsRoutes({ repo: participants }))
-      .use(createPrizesRoutes({ repo: prizes })),
+      .use(createPrizesRoutes({ repo: prizes }))
+      .use(createWinnersRoutes({ repo: winners })),
   );
 
 listen(app, env.PORT);
