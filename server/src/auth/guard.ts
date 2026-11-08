@@ -16,9 +16,18 @@ export function isSessionValid(cookieValue: unknown, secret: string, now: number
 export function createAdminRoutes(deps: { sessionSecret: string; now: () => number }) {
   const { sessionSecret, now } = deps;
 
-  return new Elysia({ prefix: "/api/admin" }).onTransform(({ cookie, status }) => {
-    if (!isSessionValid(cookie[SESSION_COOKIE]?.value, sessionSecret, now())) {
-      throw status(401, { error: "unauthenticated" });
-    }
-  });
+  return (
+    new Elysia({ prefix: "/api/admin" })
+      // Elysia's default validation response spells out the schema; admin routes answer with this instead.
+      .onError(({ code, status }) => {
+        if (code === "VALIDATION" || code === "PARSE") {
+          return status(422, { error: "invalid_input" });
+        }
+      })
+      .onTransform(({ cookie, status }) => {
+        if (!isSessionValid(cookie[SESSION_COOKIE]?.value, sessionSecret, now())) {
+          throw status(401, { error: "unauthenticated" });
+        }
+      })
+  );
 }

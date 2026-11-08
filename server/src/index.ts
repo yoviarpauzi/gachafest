@@ -6,6 +6,8 @@ import { createAuthRoutes } from "./auth/routes";
 import { join } from "node:path";
 import { openDatabase, resolveDatabasePath } from "./db/database";
 import { migrate } from "./db/migrate";
+import { createParticipantsRepository } from "./participants/repository";
+import { createParticipantsRoutes } from "./participants/routes";
 import { HOST, listen } from "./server";
 
 const PORT = 3000;
@@ -16,7 +18,8 @@ const db = openDatabase(resolveDatabasePath(env.DATABASE_PATH, serverDir));
 const applied = migrate(db, join(serverDir, "migrations"));
 if (applied.length > 0) console.log(`Applied migrations: ${applied.join(", ")}`);
 
-// `db` is handed to the organizer sub-plugins as they are added under createAdminRoutes().
+const participants = createParticipantsRepository(db);
+
 const app = new Elysia()
   .use(
     createAuthRoutes({
@@ -26,7 +29,11 @@ const app = new Elysia()
       now: Date.now,
     }),
   )
-  .use(createAdminRoutes({ sessionSecret: env.SESSION_SECRET, now: Date.now }));
+  .use(
+    createAdminRoutes({ sessionSecret: env.SESSION_SECRET, now: Date.now }).use(
+      createParticipantsRoutes({ repo: participants }),
+    ),
+  );
 
 listen(app, PORT);
 

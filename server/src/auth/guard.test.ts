@@ -127,4 +127,18 @@ describe("createAdminRoutes guard runs before validation", () => {
       (await post(app, "/api/admin/items", JSON.stringify({ name: "x" }), validCookie())).status,
     ).toBe(200);
   });
+
+  test("an authenticated invalid body answers 422 invalid_input without schema details", async () => {
+    const { app, validCookie } = schemaApp();
+    const res = await post(app, "/api/admin/items", JSON.stringify({}), validCookie());
+    expect(res.status).toBe(422);
+    expect(await res.json()).toEqual({ error: "invalid_input" });
+  });
+
+  test("malformed JSON from an authenticated caller answers 422 invalid_input", async () => {
+    const { app, validCookie } = schemaApp();
+    const res = await post(app, "/api/admin/items", "{not json", validCookie());
+    expect(res.status).toBe(422);
+    expect(await res.json()).toEqual({ error: "invalid_input" });
+  });
 });
