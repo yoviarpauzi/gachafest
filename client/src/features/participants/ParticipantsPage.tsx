@@ -151,19 +151,38 @@ export function ParticipantsPage({
 
   // ---- First load, or the list could not be loaded
   if (!data) {
-    return (
-      <div className="flex flex-col gap-8">
-        <PageHeader title="Participants" subtitle={SUBTITLE} />
-        {list.isError ? (
+    if (list.isError) {
+      return (
+        <div className="flex flex-col gap-8">
+          <PageHeader title="Participants" subtitle={SUBTITLE} />
           <div className="flex flex-col items-start gap-4">
             <Alert title="Could not load participants">Try again.</Alert>
             <Button variant="secondary" onClick={() => list.refetch()}>
               Retry
             </Button>
           </div>
-        ) : (
-          <ParticipantsSkeleton />
-        )}
+        </div>
+      );
+    }
+    // The Figma Loading frame: the page chrome is there, the data is not.
+    return (
+      <div className="flex flex-col gap-8">
+        <PageHeader
+          title="Participants"
+          subtitle={SUBTITLE}
+          actions={
+            <Button variant="secondary" disabled>
+              Import file
+            </Button>
+          }
+        />
+        <div className="flex items-center justify-between gap-6">
+          <SearchField label="Search participants" value={input} onChange={setInput} disabled />
+          <p role="status" className="text-body-md text-gold-muted">
+            Loading participants...
+          </p>
+        </div>
+        <ParticipantsSkeleton />
       </div>
     );
   }
@@ -183,9 +202,12 @@ export function ParticipantsPage({
           onMultiple={() => setDropError("multiple_files")}
         />
         {data.total === 0 ? (
-          <p className="text-body-md text-gold-muted">
-            No participants yet. Guests appear here after you import a file.
-          </p>
+          // The Figma error frame shows the dropzone alone.
+          dropzoneState !== "error" && (
+            <p className="text-body-md text-gold-muted">
+              No participants yet. Guests appear here after you import a file.
+            </p>
+          )
         ) : (
           <div>
             <Button variant="ghost" onClick={backToList}>

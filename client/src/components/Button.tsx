@@ -1,19 +1,31 @@
 import type { ButtonHTMLAttributes } from "react";
 
 type Variant = "primary" | "secondary" | "ghost";
+type Size = "md" | "lg";
 
 const base =
   "flex items-center justify-center rounded-full outline-offset-2 focus-visible:outline-2 focus-visible:outline-gold-300 disabled:cursor-not-allowed disabled:opacity-50";
 
-// Sizes follow the Figma Button component: primary is Lg, secondary and ghost are Md.
 const variants: Record<Variant, string> = {
-  primary: "bg-gold-metal px-8 py-4 font-display text-button-lg text-black-950",
-  secondary: "border border-gold-500 px-6 py-3 font-display text-button-md text-gold-300",
-  ghost: "px-6 py-3 font-display text-button-md text-ink",
+  primary: "bg-gold-metal font-display text-black-950",
+  secondary: "border border-gold-500 font-display text-gold-300",
+  ghost: "font-display text-ink",
 };
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant };
+// The Figma Button component has Md (nav, toolbars) and Lg (hero, CTA).
+const sizes: Record<Size, string> = {
+  md: "px-6 py-3 text-button-md",
+  lg: "px-8 py-4 text-button-lg",
+};
 
-export function Button({ variant = "primary", className = "", ...props }: ButtonProps) {
-  return <button {...props} className={`${base} ${variants[variant]} ${className}`} />;
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; size?: Size };
+
+/** Primary defaults to Lg (the login button); secondary and ghost default to Md. */
+export function Button({
+  variant = "primary",
+  size = variant === "primary" ? "lg" : "md",
+  className = "",
+  ...props
+}: ButtonProps) {
+  return <button {...props} className={`${base} ${variants[variant]} ${sizes[size]} ${className}`} />;
 }

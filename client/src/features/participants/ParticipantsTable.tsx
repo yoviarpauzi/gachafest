@@ -37,10 +37,13 @@ export function ParticipantsTable({ items, matching, page, pendingIds, onToggle,
       {
         id: "status",
         header: "Status",
+        // A flex wrapper keeps the chip off the text baseline, so rows are 59px as in Figma.
         cell: ({ row }) => (
-          <StatusChip tone={row.original.disabled ? "disabled" : "active"}>
-            {row.original.disabled ? "Disabled" : "Active"}
-          </StatusChip>
+          <div className="flex">
+            <StatusChip tone={row.original.disabled ? "disabled" : "active"}>
+              {row.original.disabled ? "Disabled" : "Active"}
+            </StatusChip>
+          </div>
         ),
       },
       {
@@ -133,11 +136,22 @@ export function ParticipantsSkeleton() {
         <span className="inline-block w-95">Email</span>
         <span className="inline-block w-35">Status</span>
       </div>
+      {/* Same column widths as the real table, rows 61px as in Figma. */}
       {Array.from({ length: 8 }, (_, i) => (
-        <div key={i} className="flex items-center gap-12 border-b border-black-700 px-4 py-5" aria-hidden="true">
-          <span className="h-3.5 w-55 rounded-full bg-black-800 motion-safe:animate-pulse" />
-          <span className="h-3.5 w-85 rounded-full bg-black-800 motion-safe:animate-pulse" />
-          <span className="h-3.5 w-25 rounded-full bg-black-800 motion-safe:animate-pulse" />
+        <div
+          key={i}
+          className="flex h-15.25 items-center border-b border-black-700 px-4"
+          aria-hidden="true"
+        >
+          <span className="w-65">
+            <span className="block h-3.5 w-55 rounded-full bg-black-800 motion-safe:animate-pulse" />
+          </span>
+          <span className="w-95">
+            <span className="block h-3.5 w-85 rounded-full bg-black-800 motion-safe:animate-pulse" />
+          </span>
+          <span className="w-35">
+            <span className="block h-3.5 w-25 rounded-full bg-black-800 motion-safe:animate-pulse" />
+          </span>
         </div>
       ))}
     </div>

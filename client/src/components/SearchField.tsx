@@ -8,16 +8,22 @@ export function SearchField({
   label,
   placeholder = "Search by name or email",
   maxLength,
+  disabled = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   label: string;
   placeholder?: string;
   maxLength?: number;
+  disabled?: boolean;
 }) {
   const id = useId();
   return (
-    <div className="flex w-80 items-center gap-3 rounded-md border border-black-700 bg-black-950 px-4 py-3 focus-within:border-gold-400 focus-within:ring-1 focus-within:ring-gold-400">
+    <div
+      className={`flex w-80 items-center gap-3 rounded-md border border-black-700 bg-black-950 px-4 py-3 focus-within:border-gold-400 focus-within:ring-1 focus-within:ring-gold-400 ${
+        disabled ? "opacity-50" : ""
+      }`}
+    >
       <MaskIcon src={searchIcon} className="size-5 text-gold-400" />
       <label htmlFor={id} className="sr-only">
         {label}
@@ -31,6 +37,7 @@ export function SearchField({
         value={value}
         placeholder={placeholder}
         maxLength={maxLength}
+        disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
         className="min-w-0 flex-1 bg-transparent text-body-md text-ink outline-none placeholder:text-gold-muted"
       />

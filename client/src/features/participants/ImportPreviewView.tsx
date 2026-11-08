@@ -61,7 +61,7 @@ export function ImportPreviewView({ preview, importing, error, onImport, onChoos
       )}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button disabled={importing || nothingToImport} onClick={onImport}>
+        <Button size="md" disabled={importing || nothingToImport} onClick={onImport}>
           {importing ? "Importing..." : `Import ${plural(preview.valid, "guest")}`}
         </Button>
         <Button variant="ghost" disabled={importing} onClick={onChooseAnother}>
