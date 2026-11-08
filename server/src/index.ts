@@ -6,6 +6,10 @@ import { createAuthRoutes } from "./auth/routes";
 import { join } from "node:path";
 import { openDatabase, resolveDatabasePath } from "./db/database";
 import { migrate } from "./db/migrate";
+import { createDrawRepository } from "./draw/repository";
+import { createScreenPresence } from "./draw/presence";
+import { createDrawRoutes } from "./draw/routes";
+import { createScreenRoutes } from "./draw/screen";
 import { createParticipantsRepository } from "./participants/repository";
 import { createParticipantsRoutes } from "./participants/routes";
 import { createPrizesRepository } from "./prizes/repository";
@@ -24,6 +28,8 @@ if (applied.length > 0) console.log(`Applied migrations: ${applied.join(", ")}`)
 const participants = createParticipantsRepository(db);
 const prizes = createPrizesRepository(db);
 const winners = createWinnersRepository(db);
+const draw = createDrawRepository(db, { winners, prizes });
+const presence = createScreenPresence();
 
 // Bun refuses bigger bodies before they are parsed; the upload handlers enforce the exact 5 MiB limit.
 const app = new Elysia({ serve: { maxRequestBodySize: 6 * 1024 * 1024 } })
@@ -39,8 +45,11 @@ const app = new Elysia({ serve: { maxRequestBodySize: 6 * 1024 * 1024 } })
     createAdminRoutes({ sessionSecret: env.SESSION_SECRET, now: Date.now })
       .use(createParticipantsRoutes({ repo: participants }))
       .use(createPrizesRoutes({ repo: prizes }))
-      .use(createWinnersRoutes({ repo: winners })),
-  );
+      .use(createWinnersRoutes({ repo: winners }))
+      .use(createDrawRoutes({ repo: draw, presence })),
+  )
+  // Public and read-only, so outside the admin guard.
+  .use(createScreenRoutes({ repo: draw, presence }));
 
 listen(app, env.PORT);
 
