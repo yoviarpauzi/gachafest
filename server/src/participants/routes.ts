@@ -8,6 +8,7 @@ import {
 } from "./parse";
 import { planImport } from "./plan";
 import type { createParticipantsRepository } from "./repository";
+import { participantInput } from "./schema";
 
 const listQuery = z.object({
   q: z.string().max(100).default(""),
@@ -42,6 +43,14 @@ export function createParticipantsRoutes(deps: {
 
   return new Elysia({ prefix: "/participants" })
     .get("/", ({ query }) => repo.list(listQuery.parse(query)), { query: listQuery })
+    .post(
+      "/",
+      ({ body, status }) => {
+        const participant = repo.insert(participantInput.parse(body));
+        return participant ? status(201, participant) : status(409, { error: "email_taken" });
+      },
+      { body: participantInput },
+    )
     .patch(
       "/:id",
       ({ params, body, status }) => {

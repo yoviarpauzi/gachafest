@@ -305,3 +305,74 @@ describe("upload rejections", () => {
     }
   });
 });
+
+describe("POST /api/admin/participants", () => {
+  test("adds a participant, trimmed, and it shows up in the list", async () => {
+    const { app, repo, cookie } = setup();
+    const res = await call(app, "POST", "", {
+      cookie,
+      body: { name: "  Rina Pratama ", email: " rina@x.example  " },
+    });
+    expect(res.status).toBe(201);
+    expect(await res.json()).toEqual({
+      id: 1,
+      name: "Rina Pratama",
+      email: "rina@x.example",
+      disabled: false,
+    });
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).total).toBe(1);
+  });
+
+  test("answers 409 email_taken for an email that exists in any case and leaves the old one alone", async () => {
+    const { app, repo, cookie } = setup();
+    repo.insertMany([{ name: "Rina Old", email: "Rina@X.example" }]);
+    const res = await call(app, "POST", "", {
+      cookie,
+      body: { name: "Rina New", email: "rina@x.example" },
+    });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "email_taken" });
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).items.map((p) => p.name)).toEqual(["Rina Old"]);
+  });
+
+  test("answers 422 invalid_input for a missing, too long, or malformed name or email", async () => {
+    const { app, repo, cookie } = setup();
+    const bodies: unknown[] = [
+      {},
+      { name: "Rina" },
+      { email: "rina@x.example" },
+      { name: "", email: "rina@x.example" },
+      { name: "   ", email: "rina@x.example" },
+      { name: "x".repeat(201), email: "rina@x.example" },
+      { name: "Rina", email: "" },
+      { name: "Rina", email: "not-an-email" },
+      { name: "Rina", email: `${"a".repeat(245)}@x.example` },
+      { name: 12345, email: "rina@x.example" },
+      { name: "Rina", email: ["rina@x.example"] },
+    ];
+    for (const body of bodies) {
+      const res = await call(app, "POST", "", { cookie, body });
+      expect(res.status).toBe(422);
+      expect(await res.json()).toEqual({ error: "invalid_input" });
+    }
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).total).toBe(0);
+  });
+
+  test("keeps formula-like and non-Latin text as it is", async () => {
+    const { app, cookie } = setup();
+    const res = await call(app, "POST", "", {
+      cookie,
+      body: { name: "=1+1 山田 太郎", email: "yamada@x.example" },
+    });
+    expect(res.status).toBe(201);
+    expect(((await res.json()) as { name: string }).name).toBe("=1+1 山田 太郎");
+  });
+
+  test("answers 401 without a session, including for an invalid or malformed body", async () => {
+    const { app, repo } = setup();
+    expect((await call(app, "POST", "", { body: { name: "Rina", email: "rina@x.example" } })).status).toBe(401);
+    expect((await call(app, "POST", "", { body: {} })).status).toBe(401);
+    expect((await call(app, "POST", "", { rawBody: "{not json" })).status).toBe(401);
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).total).toBe(0);
+  });
+});

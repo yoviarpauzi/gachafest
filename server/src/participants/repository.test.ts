@@ -88,6 +88,29 @@ describe("setDisabled", () => {
   });
 });
 
+describe("insert", () => {
+  test("returns the new participant, active", () => {
+    const { repo } = setup();
+    expect(repo.insert({ name: "Rina", email: "Rina@X.example" })).toEqual({
+      id: 1,
+      name: "Rina",
+      email: "Rina@X.example",
+      disabled: false,
+    });
+    expect(repo.list(all).total).toBe(1);
+  });
+
+  test("returns null and changes nothing when the email exists in any case", () => {
+    const { repo } = setup();
+    repo.insertMany([{ name: "Rina Old", email: "rina@x.example" }]);
+    repo.setDisabled(1, true);
+    expect(repo.insert({ name: "Rina New", email: "RINA@X.example" })).toBeNull();
+    expect(repo.list(all).items).toEqual([
+      { id: 1, name: "Rina Old", email: "rina@x.example", disabled: true },
+    ]);
+  });
+});
+
 describe("insertMany", () => {
   test("returns the inserted count and skips existing emails case-insensitively", () => {
     const { repo } = setup();

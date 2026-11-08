@@ -1,7 +1,7 @@
 import { parse as parseCsv } from "csv-parse/sync";
 import { Unzip, UnzipInflate, UnzipPassThrough } from "fflate";
 import { readSheet } from "read-excel-file/node";
-import { z } from "zod";
+import { emailSchema, nameSchema } from "./schema";
 
 export const MAX_FILE_BYTES = 5 * 1024 * 1024;
 export const MAX_ROWS = 10_000;
@@ -32,13 +32,6 @@ export class ParticipantsFileError extends Error {
 const fail = (code: ErrorCode): never => {
   throw new ParticipantsFileError(code);
 };
-
-const nameSchema = z.string().min(1, "Name is missing").max(200, "Name is too long");
-const emailSchema = z
-  .string()
-  .min(1, "Email is missing")
-  .max(254, "Email format is not valid")
-  .pipe(z.email("Email format is not valid"));
 
 // One reason per row, the first of these that applies.
 const REASON_PRIORITY = [

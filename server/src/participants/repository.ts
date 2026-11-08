@@ -56,6 +56,16 @@ export function createParticipantsRepository(db: Database) {
       return new Set(rows.map((row) => row.key));
     },
 
+    /** Adds one participant; `null` when the email is already there in any letter case (nothing changes). */
+    insert(row: { name: string; email: string }): Participant | null {
+      const { changes, lastInsertRowid } = db.run(
+        "INSERT INTO participants (name, email, created_at) VALUES (?, ?, ?) ON CONFLICT(email) DO NOTHING",
+        [row.name, row.email, new Date().toISOString()],
+      );
+      if (changes === 0) return null;
+      return { id: Number(lastInsertRowid), name: row.name, email: row.email, disabled: false };
+    },
+
     /** Inserts in one transaction and returns how many rows were new (existing emails are skipped). */
     insertMany(rows: { name: string; email: string }[]): number {
       const insert = db.query(
