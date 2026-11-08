@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import trophyUrl from "../../assets/screen/icon-trophy.svg";
 import { formatRupiah } from "../prizes/format";
 import type { ScreenState } from "./api";
@@ -56,13 +55,6 @@ export function LuckyWinners({ items, className = "" }: { items: ScreenState["la
           ))}
         </ol>
       )}
-
-      <Link
-        to="/admin/winners"
-        className="font-sans text-[14px] leading-5 font-medium text-gold-400 underline outline-offset-2 focus-visible:outline-2 focus-visible:outline-gold-300"
-      >
-        View all winners
-      </Link>
     </section>
   );
 }
