@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import prizesIcon from "../../assets/icons/icon-prizes.svg";
 import { Alert } from "../../components/Alert";
 import { Button } from "../../components/Button";
@@ -9,7 +9,7 @@ import type { Prize } from "./api";
 import { DeletePrizeDialog } from "./DeletePrizeDialog";
 import { PrizeFormDialog } from "./PrizeFormDialog";
 import { PrizesTable } from "./PrizesTable";
-import { prizesQueryOptions } from "./queries";
+import { prizesQueryOptions, useReorderPrizesMutation } from "./queries";
 
 const SUBTITLE = "Set how many winners each prize has and the order you draw them in.";
 
@@ -19,21 +19,46 @@ export function PrizesPage() {
   const [editing, setEditing] = useState<Prize | null>(null);
   const [deleting, setDeleting] = useState<Prize | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [orderFailed, setOrderFailed] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const reorder = useReorderPrizesMutation();
+  // `isPending` lags a tick behind a drop, so this ref is the synchronous guard against a second reorder
+  // starting while one is being saved.
+  const reordering = useRef(false);
 
   const data = list.data;
 
   const startAdd = () => {
     setNotice(null);
+    setOrderFailed(false);
     setAdding(true);
   };
   const startEdit = (prize: Prize) => {
     setNotice(null);
+    setOrderFailed(false);
     setEditing(prize);
   };
   const startDelete = (prize: Prize) => {
     setNotice(null);
+    setOrderFailed(false);
     setDeleting(prize);
   };
+
+  async function saveOrder(ids: number[]) {
+    if (reordering.current) return;
+    reordering.current = true;
+    setSavingOrder(true);
+    setNotice(null);
+    setOrderFailed(false);
+    try {
+      await reorder.mutateAsync(ids);
+    } catch {
+      setOrderFailed(true);
+    } finally {
+      reordering.current = false;
+      setSavingOrder(false);
+    }
+  }
 
   // The dialogs are cheap to render closed, and every view that has prizes (or none) can open them.
   const dialogs = (
@@ -139,7 +164,14 @@ export function PrizesPage() {
         }
       />
       {noticeLine}
-      <PrizesTable items={data.items} onEdit={startEdit} onDelete={startDelete} />
+      {orderFailed && <Alert title="Could not save the new order.">Try again.</Alert>}
+      <PrizesTable
+        items={data.items}
+        onEdit={startEdit}
+        onDelete={startDelete}
+        onReorder={saveOrder}
+        reorderDisabled={savingOrder}
+      />
       <p className="text-body-sm text-gold-muted">
         Drag the handle to change the draw order. A prize cannot go below the winners it already has.
       </p>
