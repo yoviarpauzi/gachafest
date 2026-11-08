@@ -258,3 +258,45 @@ describe("exportRows", () => {
     ]);
   });
 });
+
+describe("eligible", () => {
+  test("lists enabled participants with no row for the prize, in id order", () => {
+    const { winners, participants, guests, prize } = setup();
+    const [, , maya] = guests("Rina", "Budi", "Maya", "Agus");
+    participants.update(maya!.id, { disabled: true });
+    const grand = prize("Grand Prize", 3);
+    const pool = winners.eligible(grand.id);
+    expect(names(pool.map((p) => ({ participantName: p.name })))).toEqual(["Rina", "Budi", "Agus"]);
+    expect(pool.map((p) => p.id)).toEqual([...pool.map((p) => p.id)].sort((a, b) => a - b));
+  });
+
+  test("drops someone once they win, or are cancelled, for that prize, but not for other prizes", () => {
+    const { winners, guests, prize } = setup();
+    guests("Rina", "Budi");
+    const grand = prize("Grand Prize", 2);
+    const second = prize("Second Prize", 2);
+    const first = winners.draw(grand.id); // Rina
+    expect(winners.eligible(grand.id).map((p) => p.name)).toEqual(["Budi"]);
+    expect(winners.eligible(second.id).map((p) => p.name)).toEqual(["Rina", "Budi"]);
+    if (first.kind === "ok") winners.cancel(first.winner.id);
+    expect(winners.eligible(grand.id).map((p) => p.name)).toEqual(["Budi"]);
+  });
+
+  test("does not depend on the prize existing: it is every enabled participant with no row for that id", () => {
+    const { winners, guests } = setup();
+    guests("Rina");
+    expect(winners.eligible(99).map((p) => p.name)).toEqual(["Rina"]);
+  });
+});
+
+describe("get", () => {
+  test("returns the same row as the list, or null", () => {
+    const { winners, guests, prize } = setup();
+    guests("Rina");
+    const grand = prize("Grand Prize", 1);
+    const drawn = winners.draw(grand.id);
+    const id = drawn.kind === "ok" ? drawn.winner.id : -1;
+    expect(winners.get(id)).toEqual(winners.list().items[0]);
+    expect(winners.get(99)).toBeNull();
+  });
+});

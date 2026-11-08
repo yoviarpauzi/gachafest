@@ -82,7 +82,25 @@ export function createWinnersRepository(
     return row ? toWinner(row) : null;
   };
 
+  // Who can be drawn for a prize: not disabled, and no row for this prize yet (cancelled ones included, so
+  // nobody wins a prize twice). Someone who won another prize is still eligible. The one definition of the rule.
+  const eligible = (prizeId: number) =>
+    db
+      .query(
+        `SELECT id, name FROM participants
+         WHERE disabled = 0 AND id NOT IN (SELECT participant_id FROM winners WHERE prize_id = ?)
+         ORDER BY id`,
+      )
+      .all(prizeId) as { id: number; name: string }[];
+
   return {
+    eligible,
+
+    /** One winner by id, in the shape of `list`, or null. */
+    get(id: number): Winner | null {
+      return find(id);
+    },
+
     list(): { items: Winner[]; draws: number; cancelled: number } {
       const rows = db.query(`${SELECT_WINNER} ${ORDER}`).all() as Row[];
       const items = rows.map(toWinner);
@@ -110,13 +128,7 @@ export function createWinnersRepository(
           .get(prizeId) as { n: number };
         if (valid >= prize.quota) return { kind: "prize_full" };
 
-        const pool = db
-          .query(
-            `SELECT id FROM participants
-             WHERE disabled = 0 AND id NOT IN (SELECT participant_id FROM winners WHERE prize_id = ?)
-             ORDER BY id`,
-          )
-          .all(prizeId) as { id: number }[];
+        const pool = eligible(prizeId);
         if (pool.length === 0) return { kind: "no_eligible" };
 
         const picked = pool[random(pool.length)]!;
