@@ -13,8 +13,8 @@ const MAX_SIZE = 85;
  * the middle of the window and the winner (the last entry of the strip) stops there. One name after the
  * winner and the empty space before the first are only there so the winner has neighbours, like in Figma.
  */
-export function ReelStrip({ reel, winner }: { reel: string[]; winner: string }) {
-  const strip = useMemo(() => buildReelStrip(reel, winner), [reel, winner]);
+export function ReelStrip({ reel, winner, length }: { reel: string[]; winner: string; length: number }) {
+  const strip = useMemo(() => buildReelStrip(reel, winner, length), [reel, winner, length]);
   const items = useMemo(() => (reel.length > 0 ? [...strip, reel[0]!] : strip), [strip, reel]);
   const measure = useTextMeasure();
   // Every name gets the largest size at which it fits its own slot (87 px high), on as many lines as that takes,

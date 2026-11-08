@@ -4,7 +4,7 @@ import { announce } from "./announce";
 const prize = { name: "Grand Prize", value: 10_000_000, tier: "premium" as const, position: 1, total: 4 };
 
 describe("announce", () => {
-  test.each(["reel", "star", "flash"] as const)("says the draw is under way while the stage is %s", (stage) => {
+  test.each(["reel", "flash"] as const)("says the draw is under way while the stage is %s", (stage) => {
     expect(announce({ stage, prize, winnerName: "Rina Pratama" })).toBe("Drawing for Grand Prize");
   });
 

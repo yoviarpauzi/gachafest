@@ -1,5 +1,5 @@
 import gsap from "gsap";
-import { emphasis } from "./reel";
+import { emphasis, reelEase } from "./reel";
 import { scheduleFor, type Schedule, type Tier } from "./timing";
 
 const STRIP = '[data-fx="reel-strip"]';
@@ -30,7 +30,7 @@ export function refreshStrip(scope: HTMLElement): void {
 
 const seconds = (ms: number) => ms / 1000;
 
-/** The reel spins for `reelEnd`, slows down and stops with the winner in the middle of the window. */
+/** The reel spins at one speed and brakes to a stop at `reelEnd`, with the winner in the middle of the window. */
 function addReel(tl: gsap.core.Timeline, scope: HTMLElement, schedule: Schedule, reducedMotion: boolean): void {
   const strip = scope.querySelector<HTMLElement>(STRIP);
   if (!strip) return;
@@ -54,11 +54,12 @@ function addReel(tl: gsap.core.Timeline, scope: HTMLElement, schedule: Schedule,
     {
       y: -travel,
       duration: seconds(schedule.reelEnd),
-      ease: "power3.out",
+      // One steady speed, then a brake that ends at the moment the star lands: the star falls over a spinning reel.
+      ease: reelEase,
       onUpdate: () => {
         const y = Number(gsap.getProperty(strip, "y"));
         // Blur follows the speed, and is gone once the reel has stopped (or when it has nowhere to go).
-        paintStrip(strip, Math.abs(y) >= travel - 1 ? 0 : Math.min(2, Math.abs(y - lastY) / 70));
+        paintStrip(strip, Math.abs(y) >= travel - 1 ? 0 : Math.min(2.5, Math.abs(y - lastY) / 30));
         lastY = y;
       },
     },
@@ -68,9 +69,11 @@ function addReel(tl: gsap.core.Timeline, scope: HTMLElement, schedule: Schedule,
 }
 
 /**
- * The wish-style sequence between the reel and the plate. The screen dims, a star falls from the top left onto
- * the machine, the impact flashes (premium: a white-gold burst over the whole screen and a small shake), and
- * the flash fades. Basic is smaller, silver-cream and shorter, with no burst and no shake.
+ * The wish-style sequence, during the spin and not after it. The screen dims and a star falls from the top left
+ * over the spinning reel. It lands while the reel is still turning, the impact flashes and the whole screen goes
+ * white (premium: fully, with a small shake; basic: a little less), and it stays white for a moment while the
+ * reel stops, out of sight, and the machine goes away. Then the white clears and the plate comes in (`addPlate`).
+ * Basic has a smaller, silver-cream star and flash.
  */
 function addEffects(tl: gsap.core.Timeline, scope: HTMLElement, tier: Tier, schedule: Schedule): void {
   const premium = tier === "premium";
@@ -78,40 +81,48 @@ function addEffects(tl: gsap.core.Timeline, scope: HTMLElement, tier: Tier, sche
   const dim = pick("dim");
   const star = pick("star");
   const flash = pick("flash");
-  const burst = pick("burst");
+  const white = pick("burst");
   const art = pick("stage-art");
 
-  const dimAt = seconds(schedule.reelEnd);
+  const fallAt = seconds(schedule.starStart);
+  const impact = seconds(schedule.impact);
+  const clears = seconds(schedule.flashEnd);
+  const clearing = Math.min(1, seconds(schedule.total) - clears);
+
   if (dim) {
-    tl.fromTo(dim, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4, ease: "power1.out" }, dimAt);
-    // The dim goes away with the plate coming in, so the winner is shown on the plain screen as in Figma.
-    tl.to(dim, { autoAlpha: 0, duration: Math.min(1, seconds(schedule.total - schedule.flashEnd)), ease: "power1.in" }, seconds(schedule.flashEnd));
+    tl.fromTo(dim, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.4, ease: "power1.out" }, Math.max(0, fallAt - 0.2));
+    // The dim goes away with the white, so the winner is shown on the plain screen as in Figma.
+    tl.to(dim, { autoAlpha: 0, duration: clearing, ease: "power1.in" }, clears);
   }
 
   if (star) {
     const travel = Number(star.dataset.travel);
-    const fall = seconds(schedule.starEnd - schedule.reelEnd);
-    tl.fromTo(star, { x: -travel, y: -travel }, { x: 0, y: 0, duration: fall, ease: "power2.in" }, dimAt);
-    tl.fromTo(star, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.12 }, dimAt);
-    tl.to(star, { autoAlpha: 0, duration: 0.1 }, seconds(schedule.starEnd));
+    tl.fromTo(star, { x: -travel, y: -travel }, { x: 0, y: 0, duration: impact - fallAt, ease: "power2.in" }, fallAt);
+    tl.fromTo(star, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.12 }, fallAt);
+    tl.to(star, { autoAlpha: 0, duration: 0.1 }, impact);
   }
 
-  const impact = seconds(schedule.starEnd);
   if (flash) {
-    const flashLength = seconds(schedule.flashEnd - schedule.starEnd);
     const grow = premium ? 0.25 : 0.15;
-    const hold = premium ? 0.2 : 0.1;
     tl.fromTo(flash, { scale: premium ? 0.1 : 0.3, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: grow, ease: "power3.out" }, impact);
-    if (premium) tl.fromTo(flash, { rotation: 0 }, { rotation: 14, duration: flashLength, ease: "none" }, impact);
-    tl.to(flash, { autoAlpha: 0, scale: 1.15, duration: flashLength - grow - hold, ease: "power2.in" }, impact + grow + hold);
+    if (premium) tl.fromTo(flash, { rotation: 0 }, { rotation: 14, duration: clears - impact, ease: "none" }, impact);
+    // The flash is swallowed by the white a moment later.
+    tl.to(flash, { autoAlpha: 0, duration: 0.3 }, impact + 0.3);
   }
-  if (burst) {
-    tl.fromTo(burst, { autoAlpha: 0 }, { autoAlpha: 0.9, duration: 0.08, ease: "power2.out" }, impact);
-    tl.to(burst, { autoAlpha: 0, duration: 0.7, ease: "power2.in" }, impact + 0.08);
+
+  if (white) {
+    // Up fast, held until the white starts to clear with the plate coming in.
+    tl.fromTo(white, { autoAlpha: 0 }, { autoAlpha: premium ? 1 : 0.92, duration: 0.2, ease: "power2.out" }, impact);
+    tl.to(white, { autoAlpha: 0, duration: clearing, ease: "power1.inOut" }, clears);
   }
-  if (premium && art) {
-    tl.to(art, { x: 6, y: -4, duration: 0.04, yoyo: true, repeat: 7, ease: "none" }, impact);
-    tl.set(art, { x: 0, y: 0 }, impact + 0.34);
+
+  if (art) {
+    if (premium) {
+      tl.to(art, { x: 6, y: -4, duration: 0.04, yoyo: true, repeat: 7, ease: "none" }, impact);
+      tl.set(art, { x: 0, y: 0 }, impact + 0.34);
+    }
+    // The machine goes away while the screen is white, so the white clears onto the plate and not onto the machine.
+    tl.set(art, { autoAlpha: 0 }, impact + 0.3);
   }
 }
 
@@ -130,10 +141,11 @@ function addConfetti(tl: gsap.core.Timeline, scope: HTMLElement, schedule: Sched
 }
 
 /** The prize heading, its value and the plate come in while the machine and ribbon go. */
-function addPlate(tl: gsap.core.Timeline, scope: HTMLElement, at: number, fadeIn: number): void {
+function addPlate(tl: gsap.core.Timeline, scope: HTMLElement, at: number, fadeIn: number, fadeArt: boolean): void {
   const pick = (selector: string) => scope.querySelector(selector);
   const art = pick('[data-fx="stage-art"]');
-  if (art) tl.to(art, { autoAlpha: 0, duration: fadeIn / 2, ease: "power1.in" }, at);
+  // With motion the machine is already gone under the white; with reduced motion it fades out here.
+  if (art && fadeArt) tl.to(art, { autoAlpha: 0, duration: fadeIn / 2, ease: "power1.in" }, at);
   for (const selector of ['[data-fx="heading"]', '[data-fx="amount"]']) {
     const el = pick(selector);
     if (el) tl.to(el, { autoAlpha: 1, duration: fadeIn, ease: "power2.out" }, at);
@@ -162,12 +174,12 @@ export function buildRevealTimeline(scope: HTMLElement, options: { tier: Tier; r
       tl.fromTo(dim, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.35, ease: "power1.out" }, at);
       tl.to(dim, { autoAlpha: 0, duration: 0.65, ease: "power1.in" }, at + 0.35);
     }
-    addPlate(tl, scope, at, 1);
+    addPlate(tl, scope, at, 1, true);
     return tl;
   }
 
   addEffects(tl, scope, options.tier, schedule);
-  addPlate(tl, scope, seconds(schedule.flashEnd), Math.min(1, seconds(schedule.total - schedule.flashEnd)));
+  addPlate(tl, scope, seconds(schedule.flashEnd), Math.min(1, seconds(schedule.total - schedule.flashEnd)), false);
   if (options.tier === "premium") addConfetti(tl, scope, schedule);
   return tl;
 }

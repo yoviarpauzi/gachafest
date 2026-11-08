@@ -50,9 +50,9 @@ describe("deriveView", () => {
 
   test.each([
     [0, "reel"],
-    [4500, "star"],
-    [5500, "flash"],
-    [7000, "plate"],
+    [3000, "reel"],
+    [4000, "flash"],
+    [6000, "plate"],
     [8000, "done"],
   ] as const)("a premium reveal at %d ms is in stage %s", (elapsed, stage) => {
     const view = deriveView(state({ phase: "reveal", prize: prize("premium"), reveal: reveal() }), elapsed);
@@ -60,9 +60,9 @@ describe("deriveView", () => {
   });
 
   test.each([
-    [1500, "reel"],
-    [2200, "star"],
-    [3000, "flash"],
+    [1000, "reel"],
+    [2000, "flash"],
+    [3000, "plate"],
     [3500, "plate"],
     [4000, "done"],
   ] as const)("a basic reveal at %d ms is in stage %s", (elapsed, stage) => {
@@ -87,7 +87,7 @@ describe("deriveView", () => {
 
   test("a reveal without a prize does not throw and uses the basic schedule", () => {
     const view = deriveView(state({ phase: "reveal", prize: null, reveal: reveal() }), 2200);
-    expect(view).toMatchObject({ kind: "reveal", tier: "basic", stage: "star", prize: null });
+    expect(view).toMatchObject({ kind: "reveal", tier: "basic", stage: "flash", prize: null });
   });
 
   test("the reveal phase without reveal data falls back to standby instead of crashing", () => {

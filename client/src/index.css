@@ -102,9 +102,9 @@
   background-image: linear-gradient(90deg, rgb(192 151 89 / 0), #b98a45 50%, rgb(192 151 89 / 0));
 }
 
-/* The white-gold flash that fills the screen for an instant when the star lands. */
-@utility bg-burst {
-  background-image: radial-gradient(circle at 50% 65%, rgb(255 244 214 / 0.95), rgb(243 207 145 / 0) 65%);
+/* The screen going white when the star lands: bright in the middle, warm cream at the edges, and no gaps. */
+@utility bg-whiteout {
+  background-image: radial-gradient(circle at 50% 65%, #fffdf6, #f8e8c4 100%);
 }
 
 @layer base {

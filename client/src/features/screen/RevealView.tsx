@@ -10,7 +10,9 @@ import { fitBox } from "./nameSize";
 import { NamePlate } from "./NamePlate";
 import { formatRupiah } from "../prizes/format";
 import { PrizeRibbon } from "./PrizeRibbon";
+import { stripLengthFor } from "./reel";
 import { ReelStrip } from "./ReelStrip";
+import { scheduleFor } from "./timing";
 import { MachineText, SlotMachine } from "./SlotMachine";
 import { useReveal } from "./useReveal";
 import { useTextMeasure } from "./useTextMeasure";
@@ -56,7 +58,7 @@ export function RevealView({
       <div data-fx="stage-art" className="absolute inset-0">
         <PrizeRibbon prize={view.prize} scale={1125 / 990} textScale={1.25} className="absolute top-32.5 left-99.5" />
         <SlotMachine scale={1.2} className="absolute top-110 left-102.5">
-          <ReelStrip reel={view.reel} winner={view.winnerName} />
+          <ReelStrip reel={view.reel} winner={view.winnerName} length={stripLengthFor(scheduleFor(view.tier).reelEnd)} />
           {/* What the window says with reduced motion, where the reel does not spin: no name until the plate. */}
           <div data-fx="reel-hold" aria-hidden="true" className="opacity-0">
             <MachineText>Drawing...</MachineText>
@@ -68,7 +70,7 @@ export function RevealView({
       <div aria-hidden="true" data-fx="dim" className="pointer-events-none absolute inset-0 bg-black-950/70 opacity-0" />
       <Flash tier={view.tier} />
       <FallingStar tier={view.tier} />
-      {view.tier === "premium" && <div aria-hidden="true" data-fx="burst" className="pointer-events-none absolute inset-0 bg-burst opacity-0" />}
+      <div aria-hidden="true" data-fx="burst" className="pointer-events-none absolute inset-0 bg-whiteout opacity-0" />
 
       {view.prize && value !== null && (
         <>
