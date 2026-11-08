@@ -17,7 +17,7 @@ export function TextInput({ label, error, trailing, className = "", ...props }: 
         {label}
       </label>
       <div
-        className={`flex h-[52px] items-center justify-between gap-3 rounded-md bg-black-950 px-4 py-3 focus-within:ring-1 focus-within:ring-gold-400 ${
+        className={`flex h-13 items-center justify-between gap-3 rounded-md bg-black-950 px-4 py-3 focus-within:ring-1 focus-within:ring-gold-400 ${
           error ? "border-2 border-error" : "border border-black-700 focus-within:border-gold-400"
         } ${props.disabled ? "opacity-50" : ""}`}
       >
