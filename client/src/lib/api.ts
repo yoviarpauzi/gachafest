@@ -32,3 +32,15 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   if (!res.ok) throw new ApiError(res.status, body);
   return body as T;
 }
+
+/** The parsed JSON body of a failed response, if there was one. */
+export function errorBody(error: unknown): Record<string, unknown> | undefined {
+  if (!(error instanceof ApiError)) return undefined;
+  return error.body && typeof error.body === "object" ? (error.body as Record<string, unknown>) : undefined;
+}
+
+/** The `error` code the server put in a failed response, if any. */
+export function errorCode(error: unknown): string | undefined {
+  const code = errorBody(error)?.error;
+  return typeof code === "string" ? code : undefined;
+}

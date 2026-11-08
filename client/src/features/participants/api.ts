@@ -57,9 +57,5 @@ export async function deleteParticipant(id: number): Promise<void> {
 export const setParticipantDisabled = (id: number, disabled: boolean) =>
   apiFetch<Participant>(`${BASE}/${id}`, { method: "PATCH", body: JSON.stringify({ disabled }) });
 
-/** The `error` code the server put in a failed response, if any. */
-export function errorCode(error: unknown): string | undefined {
-  if (!(error instanceof ApiError)) return undefined;
-  const code = (error.body as { error?: unknown } | undefined)?.error;
-  return typeof code === "string" ? code : undefined;
-}
+// Moved to lib/api.ts, where the other features reach it too.
+export { errorCode } from "../../lib/api";
