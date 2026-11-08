@@ -1,8 +1,8 @@
 import { rowPaginationFeature, tableFeatures, useTable } from "@tanstack/react-table";
 import type { ColumnDef } from "@tanstack/react-table";
 import { createContext, useContext, useMemo } from "react";
-import type { ReactNode } from "react";
 import { Button } from "../../components/Button";
+import { RowAction } from "../../components/RowAction";
 import { StatusChip } from "../../components/StatusChip";
 import { PAGE_SIZE, type Participant } from "./api";
 
@@ -165,34 +165,6 @@ export function ParticipantsTable({
         </nav>
       </div>
     </RowActionsContext.Provider>
-  );
-}
-
-function RowAction({
-  busy,
-  name,
-  tone = "default",
-  onClick,
-  children,
-}: {
-  busy: boolean;
-  name: string;
-  tone?: "default" | "danger";
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={onClick}
-      className={`rounded text-label-md outline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-gold-300 disabled:cursor-not-allowed disabled:opacity-50 ${
-        tone === "danger" ? "text-error" : "text-gold-400"
-      }`}
-    >
-      {children}
-      <span className="sr-only"> {name}</span>
-    </button>
   );
 }
 
