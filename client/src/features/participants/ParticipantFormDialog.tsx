@@ -3,8 +3,9 @@ import { useRef, useState } from "react";
 import { Button } from "../../components/Button";
 import { Modal } from "../../components/Modal";
 import { TextInput } from "../../components/TextInput";
+import { errorCode } from "../../lib/api";
 import { issueMessage } from "../../lib/form";
-import { errorCode, type Participant } from "./api";
+import type { Participant } from "./api";
 import { participantFormSchema } from "./formSchema";
 import {
   useAddParticipantMutation,

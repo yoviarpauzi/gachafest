@@ -5,12 +5,8 @@ import { Button } from "../../components/Button";
 import { FileDropzone } from "../../components/FileDropzone";
 import { PageHeader } from "../../components/PageHeader";
 import { SearchField } from "../../components/SearchField";
-import {
-  errorCode,
-  PAGE_SIZE,
-  type ImportPreview,
-  type Participant,
-} from "./api";
+import { errorCode } from "../../lib/api";
+import { PAGE_SIZE, type ImportPreview, type Participant } from "./api";
 import { DeleteParticipantDialog } from "./DeleteParticipantDialog";
 import { checkFile, messageFor } from "./files";
 import { plural } from "./format";

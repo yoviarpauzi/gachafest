@@ -76,6 +76,3 @@ export const setParticipantDisabled = (id: number, disabled: boolean) =>
     method: "PATCH",
     body: JSON.stringify({ disabled }),
   });
-
-// Moved to lib/api.ts, where the other features reach it too.
-export { errorCode } from "../../lib/api";
