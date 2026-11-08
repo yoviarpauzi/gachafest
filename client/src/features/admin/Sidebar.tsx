@@ -58,7 +58,8 @@ export function Sidebar() {
       <div className="flex-1" />
 
       <div className="flex flex-col gap-2">
-        <Button variant="secondary" disabled title="Coming soon" className="w-full">
+        {/* A named window: a second click brings the same one back instead of opening another. */}
+        <Button variant="secondary" className="w-full" onClick={() => window.open("/screen", "gachafest-screen")}>
           Open big screen
         </Button>
         <Button
