@@ -24,6 +24,16 @@ export async function isAuthenticated(queryClient: QueryClient): Promise<boolean
   }
 }
 
+export function useLogoutMutation() {
+  const queryClient = useQueryClient();
+  return useMutation<{ ok: true }, ApiError, void>({
+    mutationFn: () => apiFetch<{ ok: true }>("/api/auth/logout", { method: "POST" }),
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: meQueryOptions.queryKey });
+    },
+  });
+}
+
 export function useLoginMutation() {
   const queryClient = useQueryClient();
   return useMutation<{ ok: true }, ApiError, { password: string }>({
