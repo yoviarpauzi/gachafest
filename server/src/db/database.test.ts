@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { openDatabase } from "./database";
+import { openDatabase, resolveDatabasePath } from "./database";
 
 const dirs: string[] = [];
 function tempDir() {
@@ -13,6 +13,19 @@ function tempDir() {
 
 afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
+
+describe("resolveDatabasePath", () => {
+  test("keeps absolute paths and :memory: as they are", () => {
+    expect(resolveDatabasePath("/var/lib/gf.db", "/srv/app/server")).toBe("/var/lib/gf.db");
+    expect(resolveDatabasePath(":memory:", "/srv/app/server")).toBe(":memory:");
+  });
+
+  test("resolves a relative path against the given base folder, not the working directory", () => {
+    expect(resolveDatabasePath("data/gachafest.db", "/srv/my app/server")).toBe(
+      "/srv/my app/server/data/gachafest.db",
+    );
+  });
 });
 
 describe("openDatabase", () => {

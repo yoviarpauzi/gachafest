@@ -3,15 +3,17 @@ import { parseEnv } from "./env";
 import { createAdminRoutes } from "./auth/guard";
 import { createRateLimiter } from "./auth/rate-limit";
 import { createAuthRoutes } from "./auth/routes";
-import { openDatabase } from "./db/database";
+import { join } from "node:path";
+import { openDatabase, resolveDatabasePath } from "./db/database";
 import { migrate } from "./db/migrate";
 import { HOST, listen } from "./server";
 
 const PORT = 3000;
 const env = parseEnv(process.env);
 
-const db = openDatabase(env.DATABASE_PATH);
-const applied = migrate(db, new URL("../migrations", import.meta.url).pathname);
+const serverDir = join(import.meta.dir, "..");
+const db = openDatabase(resolveDatabasePath(env.DATABASE_PATH, serverDir));
+const applied = migrate(db, join(serverDir, "migrations"));
 if (applied.length > 0) console.log(`Applied migrations: ${applied.join(", ")}`);
 
 // `db` is handed to the organizer sub-plugins as they are added under createAdminRoutes().
