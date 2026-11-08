@@ -4,6 +4,7 @@ const envSchema = z.object({
   ADMIN_PASSWORD: z.string().min(1),
   SESSION_SECRET: z.string().min(32),
   DATABASE_PATH: z.string().min(1).default("data/gachafest.db"),
+  PORT: z.coerce.number().int().min(1).max(65535).default(3000),
 });
 
 export type Env = z.infer<typeof envSchema>;

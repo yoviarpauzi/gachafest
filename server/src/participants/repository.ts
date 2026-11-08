@@ -4,6 +4,12 @@ export type Participant = { id: number; name: string; email: string; disabled: b
 
 type Row = { id: number; name: string; email: string; disabled: number };
 
+type Patch = { name?: string; email?: string; disabled?: boolean };
+type UpdateResult =
+  | { kind: "ok"; participant: Participant }
+  | { kind: "not_found" }
+  | { kind: "email_taken" };
+
 const toParticipant = (row: Row): Participant => ({
   id: row.id,
   name: row.name,
@@ -37,16 +43,48 @@ export function createParticipantsRepository(db: Database) {
       };
     },
 
-    setDisabled(id: number, disabled: boolean): Participant | null {
-      const { changes } = db.run("UPDATE participants SET disabled = ? WHERE id = ?", [
-        disabled ? 1 : 0,
-        id,
-      ]);
-      if (changes === 0) return null;
+    /** Changes only the fields given. `email_taken` when another participant has that email in any letter case. */
+    update(id: number, patch: Patch): UpdateResult {
+      // Column names are fixed here; the values are bound.
+      const sets: string[] = [];
+      const values: (string | number)[] = [];
+      if (patch.name !== undefined) {
+        sets.push("name = ?");
+        values.push(patch.name);
+      }
+      if (patch.email !== undefined) {
+        sets.push("email = ?");
+        values.push(patch.email);
+      }
+      if (patch.disabled !== undefined) {
+        sets.push("disabled = ?");
+        values.push(patch.disabled ? 1 : 0);
+      }
+
+      try {
+        if (sets.length > 0) {
+          const { changes } = db.run(`UPDATE participants SET ${sets.join(", ")} WHERE id = ?`, [
+            ...values,
+            id,
+          ]);
+          if (changes === 0) return { kind: "not_found" };
+        }
+      } catch (error) {
+        if (error instanceof Error && /UNIQUE constraint failed/.test(error.message)) {
+          return { kind: "email_taken" };
+        }
+        throw error;
+      }
+
       const row = db
         .query("SELECT id, name, email, disabled FROM participants WHERE id = ?")
-        .get(id) as Row;
-      return toParticipant(row);
+        .get(id) as Row | null;
+      return row ? { kind: "ok", participant: toParticipant(row) } : { kind: "not_found" };
+    },
+
+    /** Deletes one participant; false when there was none with that id. */
+    remove(id: number): boolean {
+      return db.run("DELETE FROM participants WHERE id = ?", [id]).changes > 0;
     },
 
     emailKeys(): Set<string> {

@@ -8,13 +8,15 @@ import {
 } from "./parse";
 import { planImport } from "./plan";
 import type { createParticipantsRepository } from "./repository";
-import { participantInput } from "./schema";
+import { participantInput, participantPatch } from "./schema";
 
 const listQuery = z.object({
   q: z.string().max(100).default(""),
   page: z.coerce.number().int().min(1).max(1_000_000).default(1),
   pageSize: z.coerce.number().int().min(1).max(200).default(50),
 });
+
+const idParams = z.object({ id: z.coerce.number().int().positive() });
 
 // No `maxSize` here: a failed t.File check would answer 422, but a too-large file must be 413.
 const uploadBody = t.Object({ file: t.File() });
@@ -54,13 +56,19 @@ export function createParticipantsRoutes(deps: {
     .patch(
       "/:id",
       ({ params, body, status }) => {
-        const updated = repo.setDisabled(Number(params.id), body.disabled);
-        return updated ?? status(404, { error: "not_found" });
+        const result = repo.update(Number(params.id), participantPatch.parse(body));
+        if (result.kind === "ok") return result.participant;
+        return result.kind === "email_taken"
+          ? status(409, { error: "email_taken" })
+          : status(404, { error: "not_found" });
       },
-      {
-        params: z.object({ id: z.coerce.number().int().positive() }),
-        body: z.object({ disabled: z.boolean() }),
-      },
+      { params: idParams, body: participantPatch },
+    )
+    .delete(
+      "/:id",
+      ({ params, status }) =>
+        repo.remove(Number(params.id)) ? status(204) : status(404, { error: "not_found" }),
+      { params: idParams },
     )
     .post(
       "/import/preview",

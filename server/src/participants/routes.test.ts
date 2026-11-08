@@ -54,7 +54,7 @@ describe("GET /api/admin/participants", () => {
   test("returns items with counts", async () => {
     const { app, repo, cookie } = setup();
     repo.insertMany(guests.slice(0, 3));
-    repo.setDisabled(2, true);
+    repo.update(2, { disabled: true });
     const res = await call(app, "GET", "", { cookie });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({
@@ -138,6 +138,113 @@ describe("PATCH /api/admin/participants/:id", () => {
     expect((await call(app, "PATCH", "/abc", { cookie, body: { disabled: true } })).status).toBe(422);
     expect((await call(app, "PATCH", "/1", { cookie })).status).toBe(422);
     expect((await call(app, "PATCH", "/1", { cookie, body: { disabled: "yes" } })).status).toBe(422);
+  });
+
+  test("edits the name and the email, trimmed, and returns the participant", async () => {
+    const { app, repo, cookie } = setup();
+    repo.insertMany(guests.slice(0, 2));
+    const res = await call(app, "PATCH", "/1", {
+      cookie,
+      body: { name: "  Rina P. ", email: " rina.p@x.example " },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ id: 1, name: "Rina P.", email: "rina.p@x.example", disabled: false });
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).items.map((p) => p.name)).toEqual(["Rina P.", "Budi"]);
+  });
+
+  test("edits and toggles in one request", async () => {
+    const { app, repo, cookie } = setup();
+    repo.insertMany(guests.slice(0, 1));
+    const res = await call(app, "PATCH", "/1", { cookie, body: { name: "Rina P.", disabled: true } });
+    expect(await res.json()).toEqual({ id: 1, name: "Rina P.", email: "rina@x.example", disabled: true });
+  });
+
+  test("answers 409 email_taken for someone else's email in any letter case and changes nothing", async () => {
+    const { app, repo, cookie } = setup();
+    repo.insertMany(guests.slice(0, 2));
+    const res = await call(app, "PATCH", "/1", { cookie, body: { name: "Changed", email: "BUDI@x.example" } });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "email_taken" });
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).items[0]).toEqual({
+      id: 1,
+      name: "Rina",
+      email: "rina@x.example",
+      disabled: false,
+    });
+  });
+
+  test("saving your own email, in another letter case, is allowed", async () => {
+    const { app, repo, cookie } = setup();
+    repo.insertMany(guests.slice(0, 1));
+    const res = await call(app, "PATCH", "/1", { cookie, body: { email: "RINA@X.example" } });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { email: string }).email).toBe("RINA@X.example");
+  });
+
+  test("ignores fields it does not know, so the id cannot be changed", async () => {
+    const { app, repo, cookie } = setup();
+    repo.insertMany(guests.slice(0, 2));
+    const res = await call(app, "PATCH", "/1", { cookie, body: { id: 2, name: "Rina P.", created_at: "x" } });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { id: number }).id).toBe(1);
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).items.map((p) => p.id)).toEqual([1, 2]);
+  });
+
+  test("answers 422 invalid_input for an empty patch or an invalid name or email, changing nothing", async () => {
+    const { app, repo, cookie } = setup();
+    repo.insertMany(guests.slice(0, 1));
+    const bodies: unknown[] = [
+      {},
+      { name: "" },
+      { name: "   " },
+      { name: "x".repeat(201) },
+      { email: "" },
+      { email: "not-an-email" },
+      { name: 123 },
+      { email: ["rina@x.example"] },
+    ];
+    for (const body of bodies) {
+      const res = await call(app, "PATCH", "/1", { cookie, body });
+      expect(res.status).toBe(422);
+      expect(await res.json()).toEqual({ error: "invalid_input" });
+    }
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).items[0]!.name).toBe("Rina");
+  });
+});
+
+describe("DELETE /api/admin/participants/:id", () => {
+  test("deletes the participant and answers 204 with no body", async () => {
+    const { app, repo, cookie } = setup();
+    repo.insertMany(guests.slice(0, 2));
+    const res = await call(app, "DELETE", "/1", { cookie });
+    expect(res.status).toBe(204);
+    expect(await res.text()).toBe("");
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).items.map((p) => p.name)).toEqual(["Budi"]);
+  });
+
+  test("answers 404 for an unknown id and for an id that was already deleted", async () => {
+    const { app, repo, cookie } = setup();
+    repo.insertMany(guests.slice(0, 1));
+    expect((await call(app, "DELETE", "/999", { cookie })).status).toBe(404);
+    await call(app, "DELETE", "/1", { cookie });
+    const again = await call(app, "DELETE", "/1", { cookie });
+    expect(again.status).toBe(404);
+    expect(await again.json()).toEqual({ error: "not_found" });
+  });
+
+  test("answers 422 for a non-numeric, zero, or negative id", async () => {
+    const { app, cookie } = setup();
+    for (const id of ["abc", "0", "-1", "1.5"]) {
+      expect((await call(app, "DELETE", `/${id}`, { cookie })).status).toBe(422);
+    }
+  });
+
+  test("answers 401 without a session and deletes nothing", async () => {
+    const { app, repo } = setup();
+    repo.insertMany(guests.slice(0, 1));
+    expect((await call(app, "DELETE", "/1")).status).toBe(401);
+    expect((await call(app, "DELETE", "/abc")).status).toBe(401);
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).total).toBe(1);
   });
 });
 
@@ -229,7 +336,7 @@ describe("POST /import", () => {
   test("treats emails that differ only in case from stored ones as duplicates", async () => {
     const { app, repo, cookie } = setup();
     repo.insertMany([{ name: "Rina Old", email: "Rina@X.example" }]);
-    repo.setDisabled(1, true);
+    repo.update(1, { disabled: true });
     const res = await upload(app, "/import", csvFile("name,email\nRina New,rina@x.example\n"), cookie);
     expect(await res.json()).toEqual({ imported: 0, duplicates: 1, problemsTotal: 0 });
     const only = repo.list({ q: "", page: 1, pageSize: 10 }).items;

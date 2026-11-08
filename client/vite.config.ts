@@ -8,7 +8,8 @@ export default defineConfig({
   plugins: [tanstackRouter({ target: "react", autoCodeSplitting: true }), react(), tailwindcss()],
   server: {
     proxy: {
-      "/api": "http://127.0.0.1:3000",
+      // API_URL lets a second API (another port, another database) be used without touching the default one.
+      "/api": process.env.API_URL ?? "http://127.0.0.1:3000",
     },
   },
 });

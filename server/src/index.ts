@@ -10,7 +10,6 @@ import { createParticipantsRepository } from "./participants/repository";
 import { createParticipantsRoutes } from "./participants/routes";
 import { HOST, listen } from "./server";
 
-const PORT = 3000;
 const env = parseEnv(process.env);
 
 const serverDir = join(import.meta.dir, "..");
@@ -36,6 +35,6 @@ const app = new Elysia({ serve: { maxRequestBodySize: 6 * 1024 * 1024 } })
     ),
   );
 
-listen(app, PORT);
+listen(app, env.PORT);
 
-console.log(`Server listening on http://${HOST}:${PORT}`);
+console.log(`Server listening on http://${HOST}:${env.PORT}`);

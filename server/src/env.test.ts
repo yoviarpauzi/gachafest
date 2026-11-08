@@ -12,7 +12,16 @@ describe("parseEnv", () => {
       ADMIN_PASSWORD: "hunter2",
       SESSION_SECRET: secret32,
       DATABASE_PATH: "data/gachafest.db",
+      PORT: 3000,
     });
+  });
+
+  test("PORT defaults to 3000, accepts another port, and rejects anything that is not a port", () => {
+    const base = { ADMIN_PASSWORD: "hunter2", SESSION_SECRET: secret32 };
+    expect(parseEnv({ ...base, PORT: "3100" }).PORT).toBe(3100);
+    for (const PORT of ["", "abc", "0", "70000", "-1", "3000.5"]) {
+      expect(() => parseEnv({ ...base, PORT })).toThrow(/PORT/);
+    }
   });
 
   test("uses the given DATABASE_PATH", () => {

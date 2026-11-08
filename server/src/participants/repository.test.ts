@@ -31,7 +31,7 @@ describe("list", () => {
   test("returns items in id order with total and disabled counts", () => {
     const { repo } = setup();
     repo.insertMany([guest("Rina"), guest("Budi"), guest("Maya")]);
-    repo.setDisabled(2, true);
+    repo.update(2, { disabled: true });
     const page = repo.list(all);
     expect(page.items.map((p) => p.name)).toEqual(["Rina", "Budi", "Maya"]);
     expect(page.items[1]).toEqual({ id: 2, name: "Budi", email: "budi@x.example", disabled: true });
@@ -73,18 +73,82 @@ describe("list", () => {
   });
 });
 
-describe("setDisabled", () => {
-  test("toggles and returns the participant, null for an unknown id", () => {
+describe("update", () => {
+  const seeded = () => {
+    const ctx = setup();
+    ctx.repo.insertMany([guest("Rina"), guest("Budi")]);
+    return ctx;
+  };
+  const rina = { id: 1, name: "Rina", email: "rina@x.example", disabled: false };
+
+  test("toggles disabled and returns the participant", () => {
+    const { repo } = seeded();
+    expect(repo.update(1, { disabled: true })).toEqual({
+      kind: "ok",
+      participant: { ...rina, disabled: true },
+    });
+    expect(repo.update(1, { disabled: false })).toEqual({ kind: "ok", participant: rina });
+  });
+
+  test("changes the name, the email, or both, and leaves the rest alone", () => {
+    const { repo } = seeded();
+    repo.update(1, { disabled: true });
+    expect(repo.update(1, { name: "Rina P." })).toEqual({
+      kind: "ok",
+      participant: { ...rina, name: "Rina P.", disabled: true },
+    });
+    expect(repo.update(1, { email: "rina.p@x.example" })).toEqual({
+      kind: "ok",
+      participant: { ...rina, name: "Rina P.", email: "rina.p@x.example", disabled: true },
+    });
+    expect(repo.update(1, { name: "Rina Pratama", email: "rina@x.example" })).toEqual({
+      kind: "ok",
+      participant: { ...rina, name: "Rina Pratama", disabled: true },
+    });
+    expect(repo.list(all).items.map((p) => p.name)).toEqual(["Rina Pratama", "Budi"]);
+  });
+
+  test("an empty patch returns the participant unchanged", () => {
+    const { repo } = seeded();
+    expect(repo.update(1, {})).toEqual({ kind: "ok", participant: rina });
+  });
+
+  test("an email that belongs to someone else, in any letter case, is email_taken and nothing changes", () => {
+    const { repo } = seeded();
+    expect(repo.update(1, { name: "Changed", email: "BUDI@x.example" })).toEqual({ kind: "email_taken" });
+    expect(repo.list(all).items[0]).toEqual(rina);
+  });
+
+  test("keeping your own email, even in another letter case, is not a conflict", () => {
+    const { repo } = seeded();
+    expect(repo.update(1, { email: "RINA@X.example" })).toEqual({
+      kind: "ok",
+      participant: { ...rina, email: "RINA@X.example" },
+    });
+  });
+
+  test("an unknown id is not_found", () => {
+    const { repo } = seeded();
+    expect(repo.update(999, { disabled: true })).toEqual({ kind: "not_found" });
+    expect(repo.update(999, {})).toEqual({ kind: "not_found" });
+  });
+});
+
+describe("remove", () => {
+  test("deletes only that participant and says whether it existed", () => {
+    const { repo } = setup();
+    repo.insertMany([guest("Rina"), guest("Budi")]);
+    expect(repo.remove(1)).toBe(true);
+    expect(repo.list(all).items.map((p) => p.name)).toEqual(["Budi"]);
+    expect(repo.remove(1)).toBe(false);
+    expect(repo.remove(999)).toBe(false);
+  });
+
+  test("the email can be used again after the participant is deleted", () => {
     const { repo } = setup();
     repo.insertMany([guest("Rina")]);
-    expect(repo.setDisabled(1, true)).toEqual({
-      id: 1,
-      name: "Rina",
-      email: "rina@x.example",
-      disabled: true,
-    });
-    expect(repo.setDisabled(1, false)?.disabled).toBe(false);
-    expect(repo.setDisabled(999, true)).toBeNull();
+    repo.remove(1);
+    expect(repo.insert({ name: "Rina Again", email: "rina@x.example" })).not.toBeNull();
   });
 });
 
@@ -103,7 +167,7 @@ describe("insert", () => {
   test("returns null and changes nothing when the email exists in any case", () => {
     const { repo } = setup();
     repo.insertMany([{ name: "Rina Old", email: "rina@x.example" }]);
-    repo.setDisabled(1, true);
+    repo.update(1, { disabled: true });
     expect(repo.insert({ name: "Rina New", email: "RINA@X.example" })).toBeNull();
     expect(repo.list(all).items).toEqual([
       { id: 1, name: "Rina Old", email: "rina@x.example", disabled: true },
