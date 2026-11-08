@@ -21,3 +21,29 @@ export function nameFontSize(name: string, maxWidth: number): { fontSize: number
 
   return { fontSize: Math.max(MIN_SIZE, Math.min(READABLE_SIZE, perLine(3))), lines: 3 };
 }
+
+const LINE_HEIGHT = 1.1;
+const ABSOLUTE_MIN = 20;
+
+/**
+ * Font size and line count for a text that has to fit a box of `width` by `height` px, never above `maxSize`.
+ * Fewer lines are better as long as the size stays at 55% of the maximum or more; a long prize name then
+ * takes two lines at a good size instead of one line too small to read from the back of the room. The block
+ * never grows taller than `height`, and the size never goes under 20 px.
+ */
+export function fitBox(
+  text: string,
+  box: { width: number; height: number; maxSize: number },
+): { fontSize: number; lines: 1 | 2 | 3 } {
+  const sizeFor = (lines: number) =>
+    Math.min(
+      box.maxSize,
+      Math.floor((lines * box.width) / (WIDTH_FACTOR * text.length)),
+      Math.floor(box.height / (lines * LINE_HEIGHT)),
+    );
+  const options = ([1, 2, 3] as const).map((lines) => ({ lines, fontSize: sizeFor(lines) }));
+
+  const good = options.find((option) => option.fontSize >= box.maxSize * 0.55);
+  const best = good ?? options.reduce((a, b) => (b.fontSize > a.fontSize ? b : a));
+  return { fontSize: Math.max(ABSOLUTE_MIN, best.fontSize), lines: best.lines };
+}

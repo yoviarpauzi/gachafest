@@ -37,16 +37,21 @@ export function LuckyWinners({ items, className = "" }: { items: ScreenState["la
               >
                 {index + 1}
               </span>
-              <span className="line-clamp-3 min-w-px flex-1 font-sans text-[20px] leading-7.5 break-words text-ink">
-                {item.winnerName}
+              <span className="min-w-px flex-1">
+                <span className="line-clamp-3 block font-sans text-[20px] leading-7.5 break-words text-ink">{item.winnerName}</span>
+                {item.prizeValue === null && (
+                  <span className="line-clamp-2 block font-sans text-[14px] leading-5 break-words text-gold-muted">{item.prizeName}</span>
+                )}
               </span>
-              <span
-                className={`shrink-0 font-sans text-[20px] leading-7.5 whitespace-nowrap ${
-                  index === 0 ? "text-gold-300" : "text-gold-muted"
-                }`}
-              >
-                {item.prizeValue === null ? "–" : formatRupiah(item.prizeValue)}
-              </span>
+              {item.prizeValue !== null && (
+                <span
+                  className={`shrink-0 font-sans text-[20px] leading-7.5 whitespace-nowrap ${
+                    index === 0 ? "text-gold-300" : "text-gold-muted"
+                  }`}
+                >
+                  {formatRupiah(item.prizeValue)}
+                </span>
+              )}
             </li>
           ))}
         </ol>

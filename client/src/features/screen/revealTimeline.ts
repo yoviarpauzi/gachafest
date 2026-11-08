@@ -64,5 +64,19 @@ export function buildRevealTimeline(scope: HTMLElement, options: { tier: Tier })
     paintStrip(strip, 0);
   }
 
+  // From the end of the flash the machine and ribbon give way to the prize heading, its value and the plate,
+  // finished exactly when the animation ends.
+  const fadeIn = Math.min(1, (schedule.total - schedule.flashEnd) / 1000);
+  const at = schedule.flashEnd / 1000;
+  const group = (selector: string) => scope.querySelector(selector);
+  const art = group('[data-fx="stage-art"]');
+  if (art) tl.to(art, { autoAlpha: 0, duration: fadeIn / 2, ease: "power1.in" }, at);
+  for (const selector of ['[data-fx="heading"]', '[data-fx="amount"]']) {
+    const el = group(selector);
+    if (el) tl.to(el, { autoAlpha: 1, duration: fadeIn, ease: "power2.out" }, at);
+  }
+  const plate = group('[data-fx="plate"]');
+  if (plate) tl.fromTo(plate, { autoAlpha: 0, scale: 0.94 }, { autoAlpha: 1, scale: 1, duration: fadeIn, ease: "power2.out" }, at);
+
   return tl;
 }
