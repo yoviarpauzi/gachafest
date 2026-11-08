@@ -82,9 +82,10 @@ export function createParticipantsRepository(db: Database) {
       return row ? { kind: "ok", participant: toParticipant(row) } : { kind: "not_found" };
     },
 
-    /** Deletes one participant; false when there was none with that id. */
-    remove(id: number): boolean {
-      return db.run("DELETE FROM participants WHERE id = ?", [id]).changes > 0;
+    /** Deletes one participant. Someone with any winner row, cancelled ones included, is kept: disable them instead. */
+    remove(id: number): "ok" | "not_found" | "has_winners" {
+      if (db.query("SELECT 1 FROM winners WHERE participant_id = ?").get(id)) return "has_winners";
+      return db.run("DELETE FROM participants WHERE id = ?", [id]).changes > 0 ? "ok" : "not_found";
     },
 
     emailKeys(): Set<string> {

@@ -26,14 +26,28 @@ export function createPrizesRoutes(deps: { repo: ReturnType<typeof createPrizesR
       "/:id",
       ({ params, body, status }) => {
         const result = repo.update(Number(params.id), prizePatch.parse(body));
-        return result.kind === "ok" ? result.prize : status(404, { error: "not_found" });
+        switch (result.kind) {
+          case "ok":
+            return result.prize;
+          case "below_drawn":
+            return status(409, { error: "below_drawn", drawn: result.drawn });
+          case "tier_locked":
+            return status(409, { error: "tier_locked" });
+          default:
+            return status(404, { error: "not_found" });
+        }
       },
       { params: idParams, body: prizePatch },
     )
     .delete(
       "/:id",
-      ({ params, status }) =>
-        repo.remove(Number(params.id)) ? status(204) : status(404, { error: "not_found" }),
+      ({ params, status }) => {
+        const result = repo.remove(Number(params.id));
+        if (result === "ok") return status(204);
+        return result === "has_winners"
+          ? status(409, { error: "has_winners" })
+          : status(404, { error: "not_found" });
+      },
       { params: idParams },
     );
 }

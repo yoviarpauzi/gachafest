@@ -66,8 +66,13 @@ export function createParticipantsRoutes(deps: {
     )
     .delete(
       "/:id",
-      ({ params, status }) =>
-        repo.remove(Number(params.id)) ? status(204) : status(404, { error: "not_found" }),
+      ({ params, status }) => {
+        const result = repo.remove(Number(params.id));
+        if (result === "ok") return status(204);
+        return result === "has_winners"
+          ? status(409, { error: "has_winners" })
+          : status(404, { error: "not_found" });
+      },
       { params: idParams },
     )
     .post(

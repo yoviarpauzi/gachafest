@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 
 export type Tier = "basic" | "premium";
-// `drawn` is 0 until the Draw sub-project counts the winners of each prize.
+// `drawn` is the number of valid (not cancelled) winners the prize has.
 export type Prize = {
   id: number;
   name: string;
@@ -11,27 +11,31 @@ export type Prize = {
   drawn: number;
 };
 
-type Row = { id: number; name: string; value: number | null; winners: number; tier: Tier };
+type Row = { id: number; name: string; value: number | null; winners: number; tier: Tier; drawn: number };
 
 type NewPrize = { name: string; value?: number | null; winners: number; tier: Tier };
 type Patch = { name?: string; value?: number | null; winners?: number; tier?: Tier };
-type UpdateResult = { kind: "ok"; prize: Prize } | { kind: "not_found" };
+type UpdateResult =
+  | { kind: "ok"; prize: Prize }
+  | { kind: "not_found" }
+  | { kind: "below_drawn"; drawn: number }
+  | { kind: "tier_locked" };
 
-const COLUMNS = "id, name, value, winners, tier";
-
-const toPrize = (row: Row): Prize => ({ ...row, drawn: 0 });
+const SELECT_PRIZE = `
+  SELECT p.id, p.name, p.value, p.winners, p.tier,
+         (SELECT COUNT(*) FROM winners w WHERE w.prize_id = p.id AND w.cancelled_at IS NULL) AS drawn
+  FROM prizes p`;
 
 export function createPrizesRepository(db: Database) {
   const find = (id: number) => {
-    const row = db.query(`SELECT ${COLUMNS} FROM prizes WHERE id = ?`).get(id) as Row | null;
-    return row ? toPrize(row) : null;
+    const row = db.query(`${SELECT_PRIZE} WHERE p.id = ?`).get(id) as Row | null;
+    return row ?? null;
   };
 
   return {
     /** Every prize in draw order. */
     list(): Prize[] {
-      const rows = db.query(`SELECT ${COLUMNS} FROM prizes ORDER BY position, id`).all() as Row[];
-      return rows.map(toPrize);
+      return db.query(`${SELECT_PRIZE} ORDER BY p.position, p.id`).all() as Row[];
     },
 
     /** Adds a prize at the end of the draw order. */
@@ -44,8 +48,21 @@ export function createPrizesRepository(db: Database) {
       return find(Number(lastInsertRowid))!;
     },
 
-    /** Changes only the fields given; `value: null` clears the value, no `value` leaves it alone. */
+    /**
+     * Changes only the fields given; `value: null` clears the value, no `value` leaves it alone. The number
+     * of winners cannot go below what is already drawn, and the tier cannot change once something is drawn
+     * (sending the tier it already has is fine, the edit form always sends every field).
+     */
     update(id: number, patch: Patch): UpdateResult {
+      const current = find(id);
+      if (!current) return { kind: "not_found" };
+      if (patch.winners !== undefined && patch.winners < current.drawn) {
+        return { kind: "below_drawn", drawn: current.drawn };
+      }
+      if (patch.tier !== undefined && patch.tier !== current.tier && current.drawn > 0) {
+        return { kind: "tier_locked" };
+      }
+
       // Column names are fixed here; the values are bound.
       const sets: string[] = [];
       const values: (string | number | null)[] = [];
@@ -74,9 +91,10 @@ export function createPrizesRepository(db: Database) {
       return prize ? { kind: "ok", prize } : { kind: "not_found" };
     },
 
-    /** Deletes one prize; false when there was none with that id. */
-    remove(id: number): boolean {
-      return db.run("DELETE FROM prizes WHERE id = ?", [id]).changes > 0;
+    /** Deletes one prize. A prize with any winner row, cancelled ones included, is kept: its history stays. */
+    remove(id: number): "ok" | "not_found" | "has_winners" {
+      if (db.query("SELECT 1 FROM winners WHERE prize_id = ?").get(id)) return "has_winners";
+      return db.run("DELETE FROM prizes WHERE id = ?", [id]).changes > 0 ? "ok" : "not_found";
     },
 
     /**

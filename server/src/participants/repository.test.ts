@@ -138,10 +138,22 @@ describe("remove", () => {
   test("deletes only that participant and says whether it existed", () => {
     const { repo } = setup();
     repo.insertMany([guest("Rina"), guest("Budi")]);
-    expect(repo.remove(1)).toBe(true);
+    expect(repo.remove(1)).toBe("ok");
     expect(repo.list(all).items.map((p) => p.name)).toEqual(["Budi"]);
-    expect(repo.remove(1)).toBe(false);
-    expect(repo.remove(999)).toBe(false);
+    expect(repo.remove(1)).toBe("not_found");
+    expect(repo.remove(999)).toBe("not_found");
+  });
+
+  test("refuses to delete someone who has a winner row, valid or cancelled, and deletes nothing", () => {
+    const { db, repo } = setup();
+    repo.insertMany([guest("Rina"), guest("Budi"), guest("Maya")]);
+    db.run("INSERT INTO prizes (name, winners, position, created_at) VALUES ('Grand Prize', 2, 1, 't')");
+    db.run("INSERT INTO winners (prize_id, participant_id, drawn_at) VALUES (1, 1, 't')");
+    db.run("INSERT INTO winners (prize_id, participant_id, drawn_at, cancelled_at) VALUES (1, 2, 't', 't2')");
+    expect(repo.remove(1)).toBe("has_winners");
+    expect(repo.remove(2)).toBe("has_winners");
+    expect(repo.list(all).items.map((p) => p.name)).toEqual(["Rina", "Budi", "Maya"]);
+    expect(repo.remove(3)).toBe("ok");
   });
 
   test("the email can be used again after the participant is deleted", () => {
