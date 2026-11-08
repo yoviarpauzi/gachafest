@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useRef } from "react";
 import participantsIcon from "../../assets/icons/icon-participants.svg";
 import playIcon from "../../assets/icons/icon-play.svg";
 import prizesIcon from "../../assets/icons/icon-prizes.svg";
@@ -16,7 +17,8 @@ const items = [
 
 // The Figma icons carry fixed colors, so they are drawn as a mask and follow the item's text color.
 function Icon({ src }: { src: string }) {
-  const mask = `url(${src})`;
+  // Quoted: Vite inlines small SVGs as data URIs, which are invalid inside an unquoted url().
+  const mask = `url(${JSON.stringify(src)})`;
   return (
     <span
       aria-hidden="true"
@@ -38,6 +40,19 @@ function Icon({ src }: { src: string }) {
 export function Sidebar() {
   const navigate = useNavigate();
   const logout = useLogoutMutation();
+
+  // `isPending` is only updated a tick after mutate(), so a double click would send two requests.
+  const loggingOut = useRef(false);
+  function handleLogout() {
+    if (loggingOut.current) return;
+    loggingOut.current = true;
+    logout.mutate(undefined, {
+      onSuccess: () => navigate({ to: "/login" }),
+      onSettled: () => {
+        loggingOut.current = false;
+      },
+    });
+  }
 
   return (
     <aside className="sticky top-0 flex h-dvh w-65 shrink-0 flex-col gap-8 border-r border-black-700 bg-black-900 px-4 py-8">
@@ -71,7 +86,7 @@ export function Sidebar() {
           variant="ghost"
           className="w-full"
           disabled={logout.isPending}
-          onClick={() => logout.mutate(undefined, { onSuccess: () => navigate({ to: "/login" }) })}
+          onClick={handleLogout}
         >
           Log out
         </Button>

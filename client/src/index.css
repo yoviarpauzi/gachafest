@@ -54,6 +54,7 @@
   --text-button-md--letter-spacing: 0.04em;
   --text-button-md--font-weight: 600;
   --text-wordmark: 22px;
+  --text-wordmark--line-height: normal;
   --text-wordmark--letter-spacing: 0.12em;
   --text-wordmark--font-weight: 800;
   --text-button-lg: 16px;
