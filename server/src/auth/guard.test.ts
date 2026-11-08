@@ -141,4 +141,11 @@ describe("createAdminRoutes guard runs before validation", () => {
     expect(res.status).toBe(422);
     expect(await res.json()).toEqual({ error: "invalid_input" });
   });
+
+  test("malformed JSON from an unauthenticated caller answers 401, not 422", async () => {
+    const { app } = schemaApp();
+    const res = await post(app, "/api/admin/items", "{not json");
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "unauthenticated" });
+  });
 });
