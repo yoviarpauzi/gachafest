@@ -37,6 +37,10 @@
   --radius-full: 999px;
 
   /* Text styles from Figma (only the ones the login page uses) */
+  --text-heading-xl: 48px;
+  --text-heading-xl--line-height: 56px;
+  --text-heading-xl--letter-spacing: -0.01em;
+  --text-heading-xl--font-weight: 700;
   --text-heading-lg: 36px;
   --text-heading-lg--line-height: 44px;
   --text-heading-lg--letter-spacing: -0.01em;
