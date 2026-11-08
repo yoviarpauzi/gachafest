@@ -7,11 +7,13 @@ export function SearchField({
   onChange,
   label,
   placeholder = "Search by name or email",
+  maxLength,
 }: {
   value: string;
   onChange: (value: string) => void;
   label: string;
   placeholder?: string;
+  maxLength?: number;
 }) {
   const id = useId();
   return (
@@ -28,6 +30,7 @@ export function SearchField({
         autoComplete="off"
         value={value}
         placeholder={placeholder}
+        maxLength={maxLength}
         onChange={(event) => onChange(event.target.value)}
         className="min-w-0 flex-1 bg-transparent text-body-md text-ink outline-none placeholder:text-gold-muted"
       />
