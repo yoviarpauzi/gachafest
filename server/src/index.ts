@@ -20,7 +20,8 @@ if (applied.length > 0) console.log(`Applied migrations: ${applied.join(", ")}`)
 
 const participants = createParticipantsRepository(db);
 
-const app = new Elysia()
+// Bun refuses bigger bodies before they are parsed; the upload handlers enforce the exact 5 MiB limit.
+const app = new Elysia({ serve: { maxRequestBodySize: 6 * 1024 * 1024 } })
   .use(
     createAuthRoutes({
       adminPassword: env.ADMIN_PASSWORD,

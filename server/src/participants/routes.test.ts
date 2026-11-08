@@ -151,3 +151,157 @@ describe("authentication", () => {
     expect((await call(app, "PATCH", "/abc", { body: {} })).status).toBe(401);
   });
 });
+
+const upload = (app: App, path: string, file?: File, cookie?: string) => {
+  const form = new FormData();
+  if (file) form.set("file", file);
+  return app.handle(
+    new Request(`http://localhost/api/admin/participants${path}`, {
+      method: "POST",
+      headers: cookie ? { cookie } : undefined,
+      body: form,
+    }),
+  );
+};
+
+const csvFile = (text: string, name = "guests.csv") => new File([text], name);
+
+const SAMPLE = [
+  "name,email",
+  "Rina,rina@x.example",
+  "Budi,budi@x.example",
+  "Rina again,RINA@x.example",
+  "Maya,",
+  ",noname@x.example",
+].join("\n");
+
+describe("POST /import/preview", () => {
+  test("returns the counts and stores nothing", async () => {
+    const { app, repo, cookie } = setup();
+    const res = await upload(app, "/import/preview", csvFile(SAMPLE), cookie);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      fileName: "guests.csv",
+      rowsRead: 5,
+      valid: 2,
+      duplicates: 1,
+      problems: [
+        { row: 5, reason: "Email is missing" },
+        { row: 6, reason: "Name is missing" },
+      ],
+      problemsTotal: 2,
+    });
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).total).toBe(0);
+  });
+
+  test("problems is capped at 100 while problemsTotal is the real count", async () => {
+    const { app, cookie } = setup();
+    const bad = Array.from({ length: 250 }, (_, i) => `Guest ${i},`).join("\n");
+    const body = (await (
+      await upload(app, "/import/preview", csvFile(`name,email\n${bad}`), cookie)
+    ).json()) as { problems: unknown[]; problemsTotal: number; rowsRead: number };
+    expect(body.problems).toHaveLength(100);
+    expect(body.problemsTotal).toBe(250);
+    expect(body.rowsRead).toBe(250);
+  });
+});
+
+describe("POST /import", () => {
+  test("stores the valid rows and returns imported, duplicates, and problemsTotal", async () => {
+    const { app, repo, cookie } = setup();
+    const res = await upload(app, "/import", csvFile(SAMPLE), cookie);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ imported: 2, duplicates: 1, problemsTotal: 2 });
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).items.map((p) => p.name)).toEqual([
+      "Rina",
+      "Budi",
+    ]);
+  });
+
+  test("importing the same file twice makes the second run all duplicates", async () => {
+    const { app, repo, cookie } = setup();
+    await upload(app, "/import", csvFile(SAMPLE), cookie);
+    const second = await upload(app, "/import", csvFile(SAMPLE), cookie);
+    expect(await second.json()).toEqual({ imported: 0, duplicates: 3, problemsTotal: 2 });
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).total).toBe(2);
+  });
+
+  test("treats emails that differ only in case from stored ones as duplicates", async () => {
+    const { app, repo, cookie } = setup();
+    repo.insertMany([{ name: "Rina Old", email: "Rina@X.example" }]);
+    repo.setDisabled(1, true);
+    const res = await upload(app, "/import", csvFile("name,email\nRina New,rina@x.example\n"), cookie);
+    expect(await res.json()).toEqual({ imported: 0, duplicates: 1, problemsTotal: 0 });
+    const only = repo.list({ q: "", page: 1, pageSize: 10 }).items;
+    expect(only).toEqual([{ id: 1, name: "Rina Old", email: "Rina@X.example", disabled: true }]);
+  });
+
+  test("a failing insert stores nothing and does not answer 200", async () => {
+    const { repo } = setup();
+    const broken = {
+      ...repo,
+      insertMany: () => {
+        throw new Error("disk full");
+      },
+    };
+    const app = new Elysia().use(
+      createAdminRoutes({ sessionSecret: secret, now: () => 1_000_000 }).use(
+        createParticipantsRoutes({ repo: broken }),
+      ),
+    );
+    const cookie = `session=${encodeURIComponent(signSession(1_000_000 + SESSION_TTL_MS, secret))}`;
+    const res = await upload(app, "/import", csvFile(SAMPLE), cookie);
+    expect(res.status).toBe(500);
+    expect(repo.list({ q: "", page: 1, pageSize: 10 }).total).toBe(0);
+  });
+});
+
+describe("upload rejections", () => {
+  test("a file over 5 MiB answers 413 file_too_large", async () => {
+    const { app, cookie } = setup();
+    const big = new File([new Uint8Array(5 * 1024 * 1024 + 1)], "big.csv");
+    for (const path of ["/import/preview", "/import"]) {
+      const res = await upload(app, path, big, cookie);
+      expect(res.status).toBe(413);
+      expect(await res.json()).toEqual({ error: "file_too_large" });
+    }
+  });
+
+  test("a binary .csv, a .txt file, and a truncated .xlsx answer 422 unsupported_file", async () => {
+    const { app, cookie } = setup();
+    const files = [
+      new File([new Uint8Array([0, 1, 2, 0xff, 0xfe])], "guests.csv"),
+      csvFile("name,email\nRina,r@x.example\n", "notes.txt"),
+      new File([new Uint8Array([0x50, 0x4b, 3, 4, 1, 2, 3])], "guests.xlsx"),
+    ];
+    for (const file of files) {
+      const res = await upload(app, "/import/preview", file, cookie);
+      expect(res.status).toBe(422);
+      expect(await res.json()).toEqual({ error: "unsupported_file" });
+    }
+  });
+
+  test("a file without an email header answers 422 missing_columns", async () => {
+    const { app, cookie } = setup();
+    const res = await upload(app, "/import/preview", csvFile("name,mail\nRina,r@x.example\n"), cookie);
+    expect(res.status).toBe(422);
+    expect(await res.json()).toEqual({ error: "missing_columns" });
+  });
+
+  test("a request without a file answers 422 invalid_input", async () => {
+    const { app, cookie } = setup();
+    for (const path of ["/import/preview", "/import"]) {
+      const res = await upload(app, path, undefined, cookie);
+      expect(res.status).toBe(422);
+      expect(await res.json()).toEqual({ error: "invalid_input" });
+    }
+  });
+
+  test("no session answers 401 for both endpoints, including an invalid body", async () => {
+    const { app } = setup();
+    for (const path of ["/import/preview", "/import"]) {
+      expect((await upload(app, path, csvFile(SAMPLE))).status).toBe(401);
+      expect((await upload(app, path)).status).toBe(401);
+    }
+  });
+});
