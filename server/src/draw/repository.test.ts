@@ -275,3 +275,93 @@ describe("the active prize", () => {
     expect(draw.state().activePrize?.id).toBe(a.id);
   });
 });
+
+describe("screen", () => {
+  test("in idle it has the first prize, no reveal and no winners", () => {
+    const { draw, guests, prize } = setup();
+    guests("Rina", "Budi");
+    prize("Grand Prize", 1, "premium");
+    prize("Second Prize", 1);
+    expect(draw.screen()).toEqual({
+      now: "2026-11-08T13:00:00.000Z",
+      phase: "idle",
+      prize: { name: "Grand Prize", value: 1_000_000, tier: "premium", position: 1, total: 2 },
+      reveal: null,
+      latest: [],
+    });
+  });
+
+  test("during a reveal it has the winner, the stored reel and the animation times, and the winner's own prize", () => {
+    const { draw, guests, prize, reel } = setup();
+    guests("Rina", "Budi", "Maya");
+    prize("Grand Prize", 1, "premium");
+    prize("Second Prize", 1);
+    draw.draw();
+    const screen = draw.screen();
+    expect(screen.phase).toBe("reveal");
+    expect(screen.prize?.name).toBe("Grand Prize"); // the prize that was drawn, not the next one
+    expect(screen.reveal).toEqual({
+      winnerName: "Rina",
+      reel: reel(),
+      revealedAt: "2026-11-08T13:00:00.000Z",
+      animationEndsAt: "2026-11-08T13:00:08.000Z",
+      skipped: false,
+    });
+    expect(screen.latest).toEqual([]); // the winner on screen is kept out of the history
+  });
+
+  test("a skip shows in the reveal", () => {
+    const { draw, guests, prize } = setup();
+    guests("Rina", "Budi");
+    prize("Grand Prize", 2);
+    draw.draw();
+    draw.skip();
+    expect(draw.screen().reveal?.skipped).toBe(true);
+  });
+
+  test("after Done the winner is in the history, the reveal is gone and the next prize is shown", () => {
+    const { draw, guests, prize } = setup();
+    guests("Rina", "Budi");
+    prize("Grand Prize", 1);
+    prize("Second Prize", 1);
+    draw.draw();
+    draw.done();
+    const screen = draw.screen();
+    expect(screen.phase).toBe("standby");
+    expect(screen.reveal).toBeNull();
+    expect(screen.prize?.name).toBe("Second Prize");
+    expect(screen.latest).toEqual([{ winnerName: "Rina", prizeName: "Grand Prize", prizeValue: 1_000_000 }]);
+  });
+
+  test("the history is at most 10 valid winners, newest first", () => {
+    const { draw, winners, guests, prize, clock } = setup();
+    guests(...Array.from({ length: 14 }, (_, i) => `Guest ${String(i + 1).padStart(2, "0")}`));
+    prize("Grand Prize", 12);
+    for (let i = 0; i < 12; i++) {
+      clock.at += 60_000;
+      draw.draw();
+      draw.done();
+    }
+    // Guest 05's win is cancelled: it must not be listed.
+    const cancelled = winners.list().items.find((w) => w.participantName === "Guest 05");
+    winners.cancel(cancelled!.id);
+    const names = draw.screen().latest.map((w) => w.winnerName);
+    expect(names).toEqual(["Guest 12", "Guest 11", "Guest 10", "Guest 09", "Guest 08", "Guest 07", "Guest 06", "Guest 04", "Guest 03", "Guest 02"]);
+  });
+
+  test("never contains an email or an id, keeps the reel to 50 names, and names the winner once while revealing", () => {
+    const { draw, guests, prize } = setup();
+    guests(...Array.from({ length: 60 }, (_, i) => `Guest ${String(i + 1).padStart(2, "0")}`));
+    prize("Grand Prize", 2);
+    expect(JSON.stringify(draw.screen())).not.toContain("Guest"); // idle: no name at all
+    draw.draw();
+    const screen = draw.screen();
+    const json = JSON.stringify(screen);
+    expect(json).not.toContain("@");
+    expect(json).not.toMatch(/"(id|email|participantId|winnerId|prizeId)"/);
+    expect(screen.reveal!.reel.length).toBeLessThanOrEqual(50);
+    expect(json.split(`"${screen.reveal!.winnerName}"`).length - 1).toBe(1); // only in reveal.winnerName
+    draw.done();
+    expect(JSON.stringify(draw.screen())).not.toMatch(/"reveal":\{/); // reveal is null again
+  });
+});

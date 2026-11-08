@@ -41,6 +41,34 @@ export type DrawState = {
   reveal: Reveal | null;
 };
 
+/**
+ * What the big screen may know, and nothing more: no email, no id, no list of participants. The winner's name
+ * only while it is being revealed, and a reel of at most 50 names picked when the winner was drawn.
+ */
+export type ScreenState = {
+  now: string;
+  phase: Phase;
+  /** The active prize; while a winner is being revealed, the prize that winner was drawn for. */
+  prize: {
+    name: string;
+    value: number | null;
+    tier: "basic" | "premium";
+    position: number;
+    total: number;
+  } | null;
+  reveal: {
+    winnerName: string;
+    reel: string[];
+    revealedAt: string;
+    animationEndsAt: string;
+    skipped: boolean;
+  } | null;
+  /** The ten newest valid winners, newest first, without the winner being revealed. */
+  latest: { winnerName: string; prizeName: string; prizeValue: number | null }[];
+};
+
+const LATEST_SIZE = 10;
+
 type StateRow = {
   phase: Phase;
   selected_prize_id: number | null;
@@ -174,6 +202,43 @@ export function createDrawRepository(
         );
         return { kind: "ok", state: currentState() } as const;
       })();
+    },
+
+    /** The public view for the big screen. */
+    screen(): ScreenState {
+      const state = currentState();
+      const shown = state.reveal;
+      const prize = shown ? shown.prize : state.activePrize;
+      const valueOf = new Map(prizeViews().map((p) => [p.id, p.value]));
+
+      const latest = winners
+        .list()
+        .items.filter((w) => w.status === "valid" && w.id !== shown?.winner.id)
+        .sort((a, b) => b.drawnAt.localeCompare(a.drawnAt) || b.id - a.id)
+        .slice(0, LATEST_SIZE)
+        .map((w) => ({
+          winnerName: w.participantName,
+          prizeName: w.prizeName,
+          prizeValue: valueOf.get(w.prizeId) ?? null,
+        }));
+
+      return {
+        now: state.now,
+        phase: state.phase,
+        prize: prize
+          ? { name: prize.name, value: prize.value, tier: prize.tier, position: prize.position, total: prize.total }
+          : null,
+        reveal: shown
+          ? {
+              winnerName: shown.winner.participantName,
+              reel: JSON.parse(readRow().reel ?? "[]") as string[],
+              revealedAt: shown.revealedAt,
+              animationEndsAt: shown.animationEndsAt,
+              skipped: shown.skipped,
+            }
+          : null,
+        latest,
+      };
     },
 
     /** Skips the animation, on the big screen too. Can be pressed again. */
