@@ -4,6 +4,7 @@ import { GoldWaves } from "../../components/GoldWaves";
 import { IdleView } from "./IdleView";
 import { screenQueryOptions } from "./queries";
 import { Stage } from "./Stage";
+import { StandbyView } from "./StandbyView";
 import { useElapsed } from "./useElapsed";
 import { deriveView } from "./view";
 
@@ -28,6 +29,7 @@ export function ScreenPage() {
       <Stage>
         <GoldWaves className="absolute top-10 -left-12 h-252 w-504" />
         {view.kind === "idle" && <IdleView />}
+        {view.kind === "standby" && <StandbyView view={view} />}
       </Stage>
     </main>
   );

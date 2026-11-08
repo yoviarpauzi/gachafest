@@ -84,6 +84,20 @@
   color: transparent;
 }
 
+/* Slot machine surfaces from the Figma paint styles (gold/vertical, cream/reel) and the machine's dark parts. */
+@utility bg-gold-vertical {
+  background-image: linear-gradient(180deg, #f7dca0 0%, #dbab61 30%, #b98a45 65%, #8f6128 100%);
+}
+@utility bg-cream-reel {
+  background-image: linear-gradient(180deg, #d9c8a3 0%, #f4e8cd 15%, #fbf4e4 50%, #f4e8cd 85%, #d2bf98 100%);
+}
+@utility bg-machine-bezel {
+  background-image: linear-gradient(180deg, #1b1917, #050505);
+}
+@utility bg-machine-base {
+  background-image: linear-gradient(180deg, #45403a 0%, #1c1a18 40%, #080808 100%);
+}
+
 @layer base {
   body {
     @apply bg-black-950 font-sans text-ink;
