@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Button } from "../../components/Button";
 import { Modal } from "../../components/Modal";
+import { errorCode } from "../../lib/api";
 import type { Prize } from "./api";
 import { useDeletePrizeMutation } from "./queries";
 
@@ -30,19 +31,19 @@ function DeleteBody({
   onDeleted: (name: string) => void;
 }) {
   const remove = useDeletePrizeMutation();
-  const [failed, setFailed] = useState(false);
+  const [error, setError] = useState<"has_winners" | "generic" | null>(null);
   // `isPending` lags a tick behind a click, so this ref is the guard against a double click.
   const deleting = useRef(false);
 
   async function confirm() {
     if (deleting.current) return;
     deleting.current = true;
-    setFailed(false);
+    setError(null);
     try {
       await remove.mutateAsync(prize.id);
       onDeleted(prize.name);
-    } catch {
-      setFailed(true);
+    } catch (caught) {
+      setError(errorCode(caught) === "has_winners" ? "has_winners" : "generic");
     } finally {
       deleting.current = false;
     }
@@ -53,9 +54,11 @@ function DeleteBody({
       <p className="text-body-md text-gold-muted">
         {prize.name} will be removed from the draw. This cannot be undone.
       </p>
-      {failed && (
+      {error && (
         <p role="alert" className="text-body-sm text-error">
-          Something went wrong. Try again.
+          {error === "has_winners"
+            ? "This prize already has winners, so it can't be deleted."
+            : "Something went wrong. Try again."}
         </p>
       )}
       <div className="flex items-center justify-end gap-3">

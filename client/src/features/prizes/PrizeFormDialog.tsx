@@ -4,6 +4,7 @@ import { Button } from "../../components/Button";
 import { Modal } from "../../components/Modal";
 import { SegmentedControl } from "../../components/SegmentedControl";
 import { TextInput } from "../../components/TextInput";
+import { errorBody, errorCode } from "../../lib/api";
 import { issueMessage } from "../../lib/form";
 import type { Prize } from "./api";
 import { formatRupiah, parseRupiah } from "./format";
@@ -27,6 +28,11 @@ export function PrizeFormDialog(props: Props) {
   );
 }
 
+const TIER_LOCKED = "The tier can't change once the prize has been drawn.";
+
+// What the server said when it refused a save, so each reason can be shown where it belongs.
+type ServerError = { kind: "generic" } | { kind: "below_drawn"; drawn: number } | { kind: "tier_locked" };
+
 const emptyValues: PrizeFormValues = { name: "", value: "", winners: "1", tier: "basic" };
 
 const valuesOf = (prize: Prize): PrizeFormValues => ({
@@ -47,10 +53,12 @@ function PrizeForm({
 }) {
   const create = useCreatePrizeMutation();
   const update = useUpdatePrizeMutation();
-  const [failed, setFailed] = useState(false);
+  const [serverError, setServerError] = useState<ServerError | null>(null);
   // `isPending` lags a tick behind a click, so this ref is the guard against a double submit.
   const submitting = useRef(false);
   const pending = create.isPending || update.isPending;
+  // Once a prize has winners its tier is fixed; the server enforces it, this keeps the control from offering it.
+  const tierLocked = prize !== undefined && prize.drawn > 0;
 
   const form = useForm({
     defaultValues: prize ? valuesOf(prize) : emptyValues,
@@ -62,15 +70,20 @@ function PrizeForm({
     onSubmit: async ({ value }) => {
       if (submitting.current) return;
       submitting.current = true;
-      setFailed(false);
+      setServerError(null);
       try {
         const input = toPrizeInput(value);
         const saved = prize
           ? await update.mutateAsync({ id: prize.id, ...input })
           : await create.mutateAsync(input);
         onDone(saved.name);
-      } catch {
-        setFailed(true);
+      } catch (error) {
+        const code = errorCode(error);
+        if (code === "below_drawn") {
+          setServerError({ kind: "below_drawn", drawn: Number(errorBody(error)?.drawn) || 0 });
+        } else {
+          setServerError({ kind: code === "tier_locked" ? "tier_locked" : "generic" });
+        }
       } finally {
         submitting.current = false;
       }
@@ -100,7 +113,7 @@ function PrizeForm({
             error={issueMessage(field.state.meta.errors[0])}
             onBlur={field.handleBlur}
             onChange={(event) => {
-              setFailed(false);
+              setServerError(null);
               field.handleChange(event.target.value);
             }}
           />
@@ -126,7 +139,7 @@ function PrizeForm({
               field.handleBlur();
             }}
             onChange={(event) => {
-              setFailed(false);
+              setServerError(null);
               field.handleChange(event.target.value);
             }}
           />
@@ -143,10 +156,15 @@ function PrizeForm({
             hint="At least 1, and never fewer than the winners already drawn."
             value={field.state.value}
             disabled={pending}
-            error={issueMessage(field.state.meta.errors[0])}
+            error={
+              issueMessage(field.state.meta.errors[0]) ??
+              (serverError?.kind === "below_drawn"
+                ? `${serverError.drawn} already drawn; it can't go below that.`
+                : undefined)
+            }
             onBlur={field.handleBlur}
             onChange={(event) => {
-              setFailed(false);
+              setServerError(null);
               field.handleChange(event.target.value);
             }}
           />
@@ -157,24 +175,24 @@ function PrizeForm({
         {(field) => (
           <SegmentedControl
             label="Reveal tier"
-            hint="Premium plays the full cinematic reveal. Basic is shorter."
+            hint={tierLocked ? TIER_LOCKED : "Premium plays the full cinematic reveal. Basic is shorter."}
             value={field.state.value}
             options={[
               { value: "basic", label: "Basic" },
               { value: "premium", label: "Premium" },
             ]}
-            disabled={pending}
+            disabled={pending || tierLocked}
             onChange={(tier) => {
-              setFailed(false);
+              setServerError(null);
               field.handleChange(tier);
             }}
           />
         )}
       </form.Field>
 
-      {failed && (
+      {(serverError?.kind === "generic" || serverError?.kind === "tier_locked") && (
         <p role="alert" className="text-body-sm text-error">
-          Something went wrong. Try again.
+          {serverError.kind === "tier_locked" ? TIER_LOCKED : "Something went wrong. Try again."}
         </p>
       )}
 

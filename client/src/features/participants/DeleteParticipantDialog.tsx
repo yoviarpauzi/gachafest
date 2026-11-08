@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Button } from "../../components/Button";
 import { Modal } from "../../components/Modal";
+import { errorCode } from "../../lib/api";
 import type { Participant } from "./api";
 import { useDeleteParticipantMutation } from "./queries";
 
@@ -32,19 +33,19 @@ function DeleteBody({
   onDeleted: (name: string) => void;
 }) {
   const remove = useDeleteParticipantMutation();
-  const [failed, setFailed] = useState(false);
+  const [error, setError] = useState<"has_winners" | "generic" | null>(null);
   // `isPending` lags a tick behind a click, so this ref is the guard against a double click.
   const deleting = useRef(false);
 
   async function confirm() {
     if (deleting.current) return;
     deleting.current = true;
-    setFailed(false);
+    setError(null);
     try {
       await remove.mutateAsync(participant.id);
       onDeleted(participant.name);
-    } catch {
-      setFailed(true);
+    } catch (caught) {
+      setError(errorCode(caught) === "has_winners" ? "has_winners" : "generic");
     } finally {
       deleting.current = false;
     }
@@ -57,9 +58,11 @@ function DeleteBody({
         drawn. This cannot be undone. To keep the guest but leave them out of the draw, disable them
         instead.
       </p>
-      {failed && (
+      {error && (
         <p role="alert" className="text-body-sm text-error">
-          Something went wrong. Try again.
+          {error === "has_winners"
+            ? `${participant.name} has won a prize, so they can't be deleted. Disable them instead.`
+            : "Something went wrong. Try again."}
         </p>
       )}
       <div className="flex items-center justify-end gap-3">
