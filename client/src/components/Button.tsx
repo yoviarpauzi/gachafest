@@ -7,9 +7,9 @@ const base =
   "flex items-center justify-center rounded-full outline-offset-2 focus-visible:outline-2 focus-visible:outline-gold-300 disabled:cursor-not-allowed disabled:opacity-50";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-gold-metal font-display text-black-950",
-  secondary: "border border-gold-500 font-display text-gold-300",
-  ghost: "font-display text-ink",
+  primary: "bg-gold-metal font-display text-black-950 hover:bg-none hover:bg-gold-300",
+  secondary: "border border-gold-500 font-display text-gold-300 hover:bg-gold-wash",
+  ghost: "font-display text-ink hover:bg-black-800",
 };
 
 // The Figma Button component has Md (nav, toolbars) and Lg (hero, CTA).
