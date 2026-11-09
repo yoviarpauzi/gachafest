@@ -1,4 +1,4 @@
-import ribbonUrl from "../../assets/screen/ribbon-shape.svg";
+import flashUrl from "../../assets/screen/flash-premium.svg";
 import { formatRupiah } from "../prizes/format";
 import type { ScreenState } from "./api";
 import { fitBox } from "./nameSize";
@@ -37,10 +37,28 @@ export function PrizeRibbon({
   return (
     <Scaled width={WIDTH} height={HEIGHT} scale={scale} className={className}>
       <div className="relative flex size-full flex-col items-center justify-center" style={{ paddingBottom: 34 * k }}>
-        {/* <img src={ribbonUrl} alt="" aria-hidden="true" className="absolute top-0 left-0 block h-55 w-247.5 max-w-none" /> */}
+        {/* The premium flash sits behind the text: it turns slowly while gently zooming in and out. */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 flex items-center justify-center"
+          style={{ paddingBottom: 34 * k }}
+        >
+          <div className="relative flex size-full items-center justify-center">
+            <div className="motion-safe:animate-prize-flash-spin">
+              <img
+                src={flashUrl}
+                alt=""
+                className="max-w-none motion-safe:animate-prize-flash-pulse"
+                style={{ width: 320 * k }}
+              />
+            </div>
+            {/* Softens the flash right behind the text so the gold keeps its contrast. */}
+            <div className="absolute inset-0 bg-prize-mask" />
+          </div>
+        </div>
         {value === null ? (
           <p
-            className="relative max-w-175 text-center font-display font-extrabold tracking-[-1.4px] text-balance text-gold-vertical"
+            className="relative max-w-175 text-center font-display font-extrabold tracking-[-1.4px] text-balance text-gold-300"
             style={{ fontSize: fitBox(name, { ...TEXT_BOX, maxSize: MAX_NAME_SIZE * k }, measure).fontSize, lineHeight: 1.1 }}
           >
             {name}
@@ -48,13 +66,13 @@ export function PrizeRibbon({
         ) : (
           <>
             <p
-              className="relative max-w-175 text-center font-display font-semibold text-balance text-gold-vertical"
+              className="relative max-w-175 text-center font-display font-semibold text-balance text-gold-300"
               style={{ fontSize: 24 * k, lineHeight: `${30 * k}px` }}
             >
               {name}
             </p>
             <p
-              className="relative font-display font-extrabold tracking-[-1.4px] whitespace-nowrap text-gold-vertical"
+              className="relative font-display font-extrabold tracking-[-1.4px] whitespace-nowrap text-gold-300"
               style={{ fontSize: 70 * k, lineHeight: `${78 * k}px` }}
             >
               {formatRupiah(value)}
