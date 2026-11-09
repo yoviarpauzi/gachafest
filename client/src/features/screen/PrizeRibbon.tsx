@@ -58,7 +58,7 @@ export function PrizeRibbon({
         </div>
         {value === null ? (
           <p
-            className="relative max-w-175 text-center font-display font-extrabold tracking-[-1.4px] text-balance text-gold-300"
+            className="animate-zoom-in-out relative max-w-175 text-center font-display font-extrabold tracking-[-1.4px] text-balance text-gold-300"
             style={{ fontSize: fitBox(name, { ...TEXT_BOX, maxSize: MAX_NAME_SIZE * k }, measure).fontSize, lineHeight: 1.1 }}
           >
             {name}
