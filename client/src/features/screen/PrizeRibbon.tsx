@@ -37,10 +37,10 @@ export function PrizeRibbon({
   return (
     <Scaled width={WIDTH} height={HEIGHT} scale={scale} className={className}>
       <div className="relative flex size-full flex-col items-center justify-center" style={{ paddingBottom: 34 * k }}>
-        <img src={ribbonUrl} alt="" aria-hidden="true" className="absolute top-0 left-0 block h-55 w-247.5 max-w-none" />
+        {/* <img src={ribbonUrl} alt="" aria-hidden="true" className="absolute top-0 left-0 block h-55 w-247.5 max-w-none" /> */}
         {value === null ? (
           <p
-            className="relative max-w-175 text-center font-display font-extrabold tracking-[-1.4px] text-balance text-black-950"
+            className="relative max-w-175 text-center font-display font-extrabold tracking-[-1.4px] text-balance text-gold-vertical"
             style={{ fontSize: fitBox(name, { ...TEXT_BOX, maxSize: MAX_NAME_SIZE * k }, measure).fontSize, lineHeight: 1.1 }}
           >
             {name}
@@ -48,13 +48,13 @@ export function PrizeRibbon({
         ) : (
           <>
             <p
-              className="relative max-w-175 text-center font-display font-semibold text-balance text-black-950"
+              className="relative max-w-175 text-center font-display font-semibold text-balance text-gold-vertical"
               style={{ fontSize: 24 * k, lineHeight: `${30 * k}px` }}
             >
               {name}
             </p>
             <p
-              className="relative font-display font-extrabold tracking-[-1.4px] whitespace-nowrap text-black-950"
+              className="relative font-display font-extrabold tracking-[-1.4px] whitespace-nowrap text-gold-vertical"
               style={{ fontSize: 70 * k, lineHeight: `${78 * k}px` }}
             >
               {formatRupiah(value)}
